@@ -93,6 +93,11 @@ auth:
             - resolver: emailMatchingUserEntityProfileEmail
             # Option 3: More flexible - creates user if not exists
             # - resolver: emailLocalPartMatchingUserEntityName
+    github:
+      development:
+        clientId: ${AUTH_GITHUB_CLIENT_ID}
+        clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+        # signIn.resolver는 생략(이 프로바이더로는 로그인하지 않음)
   # # see https://backstage.io/docs/auth/ to learn about auth providers
   # providers:
   #   # See https://backstage.io/docs/auth/guest/provider
