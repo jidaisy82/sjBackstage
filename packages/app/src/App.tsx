@@ -37,6 +37,7 @@ import { RequirePermission } from '@backstage/plugin-permission-react';
 import { catalogEntityCreatePermission } from '@backstage/plugin-catalog-common/alpha';
 import { NotificationsPage } from '@backstage/plugin-notifications';
 import { SignalsDisplay } from '@backstage/plugin-signals';
+import { googleAuthApiRef } from '@backstage/core-plugin-api';
 
 const app = createApp({
   apis,
@@ -57,8 +58,22 @@ const app = createApp({
       catalogIndex: catalogPlugin.routes.catalogIndex,
     });
   },
+  // components: {
+  //   SignInPage: props => <SignInPage {...props} auto providers={['guest']} />,
+  // },
   components: {
-    SignInPage: props => <SignInPage {...props} auto providers={['guest']} />,
+    SignInPage: props => (
+      <SignInPage
+        {...props}
+        auto
+        provider={{
+          id: 'google-auth-provider',
+          title: 'Google',
+          message: 'Sign in using Google',
+          apiRef: googleAuthApiRef,
+        }}
+      />
+    ),
   },
 });
 

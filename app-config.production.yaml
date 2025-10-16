@@ -30,7 +30,7 @@ backend:
 
 auth:
   providers:
-    guest: {}
+    # guest: {}  # Disabled - using Google OAuth instead
 
 catalog:
   # Overrides the default list locations from app-config.yaml as these contain example data.

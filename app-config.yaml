@@ -3,15 +3,12 @@ app:
   baseUrl: http://localhost:3000
 
 organization:
-  name: My Company
+  name: VNTG
 
 backend:
   # Used for enabling authentication, secret is shared by all backend plugins
   # See https://backstage.io/docs/auth/service-to-service-auth for
   # information on the format
-  # _auth:
-  #   _keys:
-  #     - _secret: ${BACKEND_SECRET}
   auth:
     keys:
       - secret: ${BACKEND_SECRET}
@@ -74,10 +71,44 @@ techdocs:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
 
 auth:
-  # see https://backstage.io/docs/auth/ to learn about auth providers
+  environment: development
   providers:
-    # See https://backstage.io/docs/auth/guest/provider
-    guest: {}
+    google:
+      development:
+        clientId: ${AUTH_GOOGLE_CLIENT_ID}
+        clientSecret: ${AUTH_GOOGLE_CLIENT_SECRET}
+        ## uncomment to set lifespan of user session
+        sessionDuration: { hours: 24 } # supports `ms` library format (e.g. '24h', '2 days'), ISO duration, "human duration" as used in code
+        # Additional options to fix nonce issues
+        additionalScopes:
+          - openid
+          - profile
+          - email
+        signIn:
+          resolvers:
+            # See https://backstage.io/docs/auth/google/provider#resolvers for more resolvers
+            # Option 1: Strict email matching with annotation (current)
+            - resolver: emailMatchingUserEntityAnnotation
+            # Option 2: Simple email matching without annotation (fallback)
+            - resolver: emailMatchingUserEntityProfileEmail
+            # Option 3: More flexible - creates user if not exists
+            # - resolver: emailLocalPartMatchingUserEntityName
+  # # see https://backstage.io/docs/auth/ to learn about auth providers
+  # providers:
+  #   # See https://backstage.io/docs/auth/guest/provider
+  #   guest: {}
+  # #   github:
+  # #     development:
+  # #       clientId: ${AUTH_GITHUB_CLIENT_ID}
+  # #       clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+  # #       ## uncomment if using GitHub Enterprise
+  # #       # enterpriseInstanceUrl: ${AUTH_GITHUB_ENTERPRISE_INSTANCE_URL}
+  # #       ## uncomment to set lifespan of user session
+  # #       # sessionDuration: { hours: 24 } # supports `ms` library format (e.g. '24h', '2 days'), ISO duration, "human duration" as used in code
+  # #       signIn:
+  # #         resolvers:
+  # #           # See https://backstage.io/docs/auth/github/provider#resolvers for more resolvers
+  # #           - resolver: usernameMatchingUserEntityName
 
 scaffolder:
   # see https://backstage.io/docs/features/software-templates/configuration for software template options
