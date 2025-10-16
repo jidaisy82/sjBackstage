@@ -19,7 +19,7 @@ spec:
   profile:
     displayName: Ji Won
     email: jidaisy@vntgcorp.com
-  memberOf: [guests]
+  memberOf: [admins, guests]
 ---
 # https://backstage.io/docs/features/software-catalog/descriptor-format#kind-group
 apiVersion: backstage.io/v1alpha1
@@ -28,4 +28,32 @@ metadata:
   name: guests
 spec:
   type: team
+  profile:
+    displayName: Guests Group
+    description: 읽기 전용 접근 권한
   children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: developers
+spec:
+  type: team
+  profile:
+    displayName: Developer Group
+    description: 개발 관련 리소스 접근 권한
+  children: []
+  parent: admins
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: admins
+spec:
+  type: team
+  profile:
+    displayName: Admin Group
+    description: 시스템 전체 관리 권한
+  children: []
+---
+

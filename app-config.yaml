@@ -71,6 +71,12 @@ techdocs:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
 
 auth:
+  autologout:
+    enabled: true                 # 기본 true지만 명시 권장
+    idleTimeoutMinutes: 30        # 유휴 30분 후 자동 로그아웃
+    promptBeforeIdleSeconds: 10   # 만료 10초 전 경고 프롬프트
+    useWorkerTimers: true         # 비활성 탭 타이머 보정
+    logoutIfDisconnected: true    # 브라우저에 활성 탭 없으면 시간 경과 후 로그아웃
   environment: development
   providers:
     google:

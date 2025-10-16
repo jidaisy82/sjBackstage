@@ -29,6 +29,7 @@ import {
   AlertDisplay,
   OAuthRequestDialog,
   SignInPage,
+  AutoLogout,
 } from '@backstage/core-components';
 import { createApp } from '@backstage/app-defaults';
 import { AppRouter, FlatRoutes } from '@backstage/core-app-api';
@@ -120,6 +121,11 @@ export default app.createRoot(
     <AlertDisplay />
     <OAuthRequestDialog />
     <SignalsDisplay />
+    <AutoLogout
+      idleTimeoutMinutes={30}
+      useWorkerTimers={false}
+      logoutIfDisconnected={false}
+    />
     <AppRouter>
       <Root>{routes}</Root>
     </AppRouter>
