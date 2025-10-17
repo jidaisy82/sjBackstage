@@ -21,6 +21,19 @@ spec:
     email: jidaisy@vntgcorp.com
   memberOf: [admins, guests]
 ---
+# # GitHub OAuth User - Add your GitHub username here
+# apiVersion: backstage.io/v1alpha1
+# kind: User
+# metadata:
+#   name: jidaisy82  # GitHub username (must match your actual GitHub username)
+#   annotations:
+#     backstage.io/managed-by-location: 'url:file:///examples/org.yaml'
+# spec:
+#   profile:
+#     displayName: Ji Won Seo
+#     email: jidaisy@vntgcorp.com  # Your email associated with GitHub
+#   memberOf: [developers, guests]
+---
 # https://backstage.io/docs/features/software-catalog/descriptor-format#kind-group
 apiVersion: backstage.io/v1alpha1
 kind: Group

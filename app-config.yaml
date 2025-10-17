@@ -12,6 +12,14 @@ backend:
   auth:
     keys:
       - secret: ${BACKEND_SECRET}
+    externalAccess:
+      - type: static
+        options:
+          token: ${EXTERNAL_SECRET}         # 임의의 긴 랜덤 문자열
+          subject: admin-curl-access         # 토큰 식별자(임의)
+        accessRestrictions:
+          - plugin: catalog                  # 이 토큰은 catalog 플러그인만 호출 가능
+          # permission: catalog.entity.create,catalog.entity.read  # (선택) 더 좁히기
   baseUrl: http://localhost:7007
   listen:
     port: 7007
@@ -99,11 +107,21 @@ auth:
             - resolver: emailMatchingUserEntityProfileEmail
             # Option 3: More flexible - creates user if not exists
             # - resolver: emailLocalPartMatchingUserEntityName
-    github:
-      development:
-        clientId: ${AUTH_GITHUB_CLIENT_ID}
-        clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
-        # signIn.resolver는 생략(이 프로바이더로는 로그인하지 않음)
+    # github:
+    #   development:
+    #     clientId: ${AUTH_GITHUB_CLIENT_ID}
+    #     clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+    #     additionalScopes:
+    #       - user:email  # Request email access
+    #       - read:user   # Read user profile
+    #     signIn:
+    #       resolvers:
+    #         # Primary: username matching (most reliable for GitHub)
+    #         - resolver: usernameMatchingUserEntityName
+    #         # Fallback: email matching (if email is available)
+    #         - resolver: emailMatchingUserEntityProfileEmail
+    #         # Last resort: create user based on email local part
+    #         - resolver: emailLocalPartMatchingUserEntityName
   # # see https://backstage.io/docs/auth/ to learn about auth providers
   # providers:
   #   # See https://backstage.io/docs/auth/guest/provider
