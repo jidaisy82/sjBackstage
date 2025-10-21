@@ -250,7 +250,7 @@ techInsights:
   
   factChecker:
     checks:
-      # DB 연결 상태 체크
+      # 1. DB 연결 상태 체크
       db-connection-active:
         type: json-rules-engine
         name: DB 연결 상태
@@ -264,7 +264,7 @@ techInsights:
                 operator: equal
                 value: true
       
-      # DB 응답 시간 체크
+      # 2. DB 응답 시간 체크
       db-response-time-healthy:
         type: json-rules-engine
         name: DB 응답 시간
@@ -278,7 +278,35 @@ techInsights:
                 operator: lessThanInclusive
                 value: 200
       
-      # DB 디스크 사용률 체크
+      # 3. 활성 연결 수 체크
+      db-active-connections-normal:
+        type: json-rules-engine
+        name: 활성 연결 수
+        description: 활성 연결 수가 50개 이하인지 확인
+        factIds:
+          - tech-blog-db-status-retriever
+        rule:
+          conditions:
+            all:
+              - fact: activeConnections
+                operator: lessThanInclusive
+                value: 50
+      
+      # 4. 유휴 연결 수 체크
+      db-idle-connections-normal:
+        type: json-rules-engine
+        name: 유휴 연결 수
+        description: 유휴 연결 수가 20개 이하인지 확인 (연결 누수 방지)
+        factIds:
+          - tech-blog-db-status-retriever
+        rule:
+          conditions:
+            all:
+              - fact: idleConnections
+                operator: lessThanInclusive
+                value: 20
+      
+      # 5. DB 디스크 사용률 체크
       db-disk-usage-normal:
         type: json-rules-engine
         name: DB 디스크 사용률
@@ -291,3 +319,73 @@ techInsights:
               - fact: dbDiskUsage
                 operator: lessThanInclusive
                 value: 80
+      
+      # 6. DB 크기 체크
+      db-size-normal:
+        type: json-rules-engine
+        name: DB 크기
+        description: DB 크기가 10GB(10240MB) 이하인지 확인
+        factIds:
+          - tech-blog-db-status-retriever
+        rule:
+          conditions:
+            all:
+              - fact: dbSizeMB
+                operator: lessThanInclusive
+                value: 10240
+      
+      # 7. 캐시 히트율 체크
+      db-cache-hit-ratio-good:
+        type: json-rules-engine
+        name: 캐시 히트율
+        description: 캐시 히트율이 90% 이상인지 확인
+        factIds:
+          - tech-blog-db-status-retriever
+        rule:
+          conditions:
+            all:
+              - fact: cacheHitRatio
+                operator: greaterThanInclusive
+                value: 90
+      
+      # 8. 최장 쿼리 실행 시간 체크
+      db-longest-query-duration-normal:
+        type: json-rules-engine
+        name: 최장 쿼리 실행 시간
+        description: 가장 오래 실행 중인 쿼리가 30초(30000ms) 이하인지 확인
+        factIds:
+          - tech-blog-db-status-retriever
+        rule:
+          conditions:
+            all:
+              - fact: longestQueryDuration
+                operator: lessThanInclusive
+                value: 30000
+      
+      # 9. 트랜잭션 커밋 비율 체크
+      db-commit-ratio-good:
+        type: json-rules-engine
+        name: 트랜잭션 커밋 비율
+        description: 트랜잭션 커밋 비율이 95% 이상인지 확인
+        factIds:
+          - tech-blog-db-status-retriever
+        rule:
+          conditions:
+            all:
+              - fact: commitRatio
+                operator: greaterThanInclusive
+                value: 95
+      
+      # 10. Dead tuple 비율 체크
+      db-dead-tuple-ratio-low:
+        type: json-rules-engine
+        name: Dead Tuple 비율
+        description: Dead tuple 비율이 10% 이하인지 확인 (VACUUM 필요 여부)
+        factIds:
+          - tech-blog-db-status-retriever
+        rule:
+          conditions:
+            all:
+              - fact: deadTupleRatio
+                operator: lessThanInclusive
+                value: 10
