@@ -1,0 +1,23 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: tech-blog-database
+  description: Tech Blog PostgreSQL 데이터베이스
+  tags:
+    - postgresql
+    - database
+    - production
+  annotations:
+    backstage.io/managed-by-location: 'file:./tech-blog-database.yaml'
+  links:
+    - url: https://grafana.example.com/d/postgres-overview
+      title: Database Monitoring Dashboard
+      icon: dashboard
+spec:
+  type: database
+  lifecycle: production
+  owner: group:backend-team
+  system: rnd-nx-framework
+  dependsOn: []
+

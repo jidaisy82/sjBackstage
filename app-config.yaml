@@ -46,6 +46,15 @@ backend:
       user: ${POSTGRES_USER}
       password: ${POSTGRES_PASSWORD}
       database: ${POSTGRES_DB}
+    # Tech Insights용 명시적 설정
+    plugin:
+      tech_insights:
+        connection:
+          host: ${POSTGRES_HOST}
+          port: ${POSTGRES_PORT}
+          user: ${POSTGRES_USER}
+          password: ${POSTGRES_PASSWORD}
+          database: ${POSTGRES_DB}
   # workingDirectory: /tmp # Use this to configure a working directory for the scaffolder, defaults to the OS temp-dir
 
 integrations:
@@ -147,23 +156,71 @@ catalog:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration
   rules:
-    - allow: [Component, System, API, Resource, Location]
+    - allow: [Component, System, API, Resource, Location, Domain, Group, User, Template]
   locations:
-    # Local example data, file locations are relative to the backend process, typically `packages/backend`
+    # ===== Backstage 내부 카탈로그 =====
+    
+    # System 정의
     - type: file
-      target: ../../examples/entities.yaml
-
-    # Local example template
-    - type: file
-      target: ../../examples/template/template.yaml
+      target: ../../catalog/systems/rnd-nx-framework.yaml
       rules:
-        - allow: [Template]
-
-    # Local example organizational data
+        - allow: [System]
+    
+    # Domain 정의
+    - type: file
+      target: ../../catalog/domains/all-domains.yaml
+      rules:
+        - allow: [Domain]
+    
+    # API 정의
+    - type: file
+      target: ../../catalog/apis/tech-blog-rest-api.yaml
+      rules:
+        - allow: [API]
+    
+    # Resource 정의
+    - type: file
+      target: ../../catalog/resources/tech-blog-database.yaml
+      rules:
+        - allow: [Resource]
+    
+    # 조직 구조 (Users, Groups)
     - type: file
       target: ../../examples/org.yaml
       rules:
         - allow: [User, Group]
+    
+    # ===== RND-NX 프로젝트 컴포넌트 (Tech Blog) =====
+    
+    # Backend Services
+    - type: file
+      target: ../../../RND-NX/apps/tech-blog/api-server/catalog-info.yaml
+      rules:
+        - allow: [Component]
+    
+    # Frontend Applications
+    - type: file
+      target: ../../../RND-NX/apps/tech-blog/user-client/catalog-info.yaml
+      rules:
+        - allow: [Component]
+    
+    # Test Projects
+    - type: file
+      target: ../../../RND-NX/apps/tech-blog/api-server-test/catalog-info.yaml
+      rules:
+        - allow: [Component]
+    
+    # ===== 예시 카탈로그 (선택사항) =====
+    
+    # Backstage 기본 예시
+    - type: file
+      target: ../../examples/entities.yaml
+    
+    # 템플릿
+    - type: file
+      target: ../../examples/template/template.yaml
+      rules:
+        - allow: [Template]
 
     ## Uncomment these lines to add more example data
     # - type: url
@@ -174,8 +231,6 @@ catalog:
     #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/acme-corp.yaml
     #   rules:
     #     - allow: [User, Group]
-    # - type: file
-    #  target: ../RND-NX/catalog-info.yaml
 
 kubernetes:
   # see https://backstage.io/docs/features/kubernetes/configuration for kubernetes configuration options
@@ -184,3 +239,55 @@ kubernetes:
 permission:
   # setting this to `false` will disable permissions
   enabled: true
+
+# Tech Insights configuration
+techInsights:
+  factRetrievers:
+    dbStatusFactRetriever:
+      cadence: '*/1 * * * *'  # 매 분마다 실행
+      lifecycle:
+        timeToLive: { hours: 24 }
+  
+  factChecker:
+    checks:
+      # DB 연결 상태 체크
+      db-connection-active:
+        type: json-rules-engine
+        name: DB 연결 상태
+        description: 데이터베이스가 정상적으로 연결되어 있는지 확인
+        factIds:
+          - tech-blog-db-status-retriever
+        rule:
+          conditions:
+            all:
+              - fact: dbConnectionStatus
+                operator: equal
+                value: true
+      
+      # DB 응답 시간 체크
+      db-response-time-healthy:
+        type: json-rules-engine
+        name: DB 응답 시간
+        description: 데이터베이스 응답 시간이 200ms 이하인지 확인
+        factIds:
+          - tech-blog-db-status-retriever
+        rule:
+          conditions:
+            all:
+              - fact: dbResponseTime
+                operator: lessThanInclusive
+                value: 200
+      
+      # DB 디스크 사용률 체크
+      db-disk-usage-normal:
+        type: json-rules-engine
+        name: DB 디스크 사용률
+        description: 디스크 사용률이 80% 이하인지 확인
+        factIds:
+          - tech-blog-db-status-retriever
+        rule:
+          conditions:
+            all:
+              - fact: dbDiskUsage
+                operator: lessThanInclusive
+                value: 80

@@ -2930,9 +2930,957 @@ audit:
 
 ---
 
-## 11. 문제 해결 및 FAQ
+## 11. 멀티 레포지토리 관리 전략
 
-### 11.1 일반적인 문제
+### 11.1 개요
+
+Backstage는 **단일 포털에서 여러 독립적인 레포지토리를 통합 관리**할 수 있도록 설계되었습니다. 
+현재 문서는 RND-NX 레포지토리를 예시로 설명하고 있지만, 동일한 방식으로 다른 레포지토리들도 추가할 수 있습니다.
+
+#### 왜 멀티 레포 관리가 중요한가?
+
+현대 조직에서는 다음과 같은 이유로 여러 레포지토리를 운영합니다:
+
+1. **기술 스택 분리**: 백엔드(Java/Spring), 프론트엔드(React), 모바일(Swift/Kotlin), 인프라(Terraform)
+2. **팀 분리**: 각 팀이 독립적인 레포지토리에서 작업
+3. **라이프사이클 분리**: 신규 프로젝트 vs 레거시 시스템
+4. **보안/권한 관리**: 민감한 코드를 별도 레포에 격리
+
+**문제점**: 
+- 프로젝트가 많아질수록 전체 시스템을 파악하기 어려움
+- 서비스 간 의존성 관계가 불명확
+- 각 프로젝트의 소유자, 문서, API 스펙을 찾기 어려움
+- 중복된 작업이나 라이브러리가 발생
+
+**Backstage 솔루션**:
+- **단일 진실의 원천(Single Source of Truth)**: 모든 소프트웨어 자산을 한곳에서 조회
+- **자동 검색(Discovery)**: 새로운 레포가 추가되면 자동으로 카탈로그에 등록
+- **관계 시각화**: 서로 다른 레포의 컴포넌트 간 의존성을 그래프로 표시
+- **통합 검색**: 수십~수백 개의 레포에서 필요한 서비스나 API를 즉시 검색
+
+### 11.2 멀티 레포 구조 예시
+
+```
+회사/조직
+├── rnd-backstage/          # Backstage 포털 (단일)
+│   └── catalog/            # 중앙 카탈로그 정의
+│       ├── systems/
+│       ├── domains/
+│       └── resources/
+│
+├── RND-NX/                 # 프로젝트 1 (차세대 프레임워크)
+│   ├── apps/
+│   ├── libs/
+│   └── catalog-info.yaml
+│
+├── legacy-erp/             # 프로젝트 2 (레거시 ERP)
+│   ├── backend/
+│   │   └── catalog-info.yaml
+│   └── frontend/
+│       └── catalog-info.yaml
+│
+├── mobile-app/             # 프로젝트 3 (모바일 앱)
+│   ├── ios/
+│   │   └── catalog-info.yaml
+│   └── android/
+│       └── catalog-info.yaml
+│
+└── infra-terraform/        # 프로젝트 4 (인프라 코드)
+    └── catalog-info.yaml
+```
+
+### 11.3 다른 레포지토리 추가 방법
+
+#### 11.3.1 단계별 가이드
+
+**Step 1: 추가할 레포지토리에 catalog-info.yaml 작성**
+
+예시: `legacy-erp` 레포지토리
+
+```yaml
+# /path/to/legacy-erp/catalog-info.yaml
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: legacy-erp-system
+  description: 레거시 ERP 시스템
+  tags:
+    - erp
+    - legacy
+    - java
+spec:
+  owner: group:erp-team
+  domain: enterprise-applications
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: legacy-erp-backend
+  description: ERP 백엔드 서버 (Spring Boot)
+  tags:
+    - java
+    - spring-boot
+    - erp
+  annotations:
+    github.com/project-slug: vntg/legacy-erp
+    backstage.io/source-location: url:https://github.com/vntg/legacy-erp/tree/main/backend
+spec:
+  type: service
+  lifecycle: production
+  owner: group:erp-team
+  system: legacy-erp-system
+  providesApis:
+    - legacy-erp-rest-api
+  dependsOn:
+    - resource:erp-oracle-database
+```
+
+**Step 2: rnd-backstage의 app-config.yaml에 경로 추가**
+
+```yaml
+# /Users/seojiwon/VNTG_PROJECT/rnd-backstage/packages/backend/app-config.yaml
+catalog:
+  locations:
+    # ===== 기존 RND-NX 프로젝트 =====
+    - type: file
+      target: ../RND-NX/catalog-info.yaml
+    
+    - type: file
+      target: ../RND-NX/apps/tech-blog/api-server/catalog-info.yaml
+    
+    # ... (기존 RND-NX 엔트리들)
+    
+    # ===== 새로운 레포지토리 추가 =====
+    
+    # Legacy ERP 시스템
+    - type: file
+      target: ../legacy-erp/catalog-info.yaml
+      rules:
+        - allow: [System, Component, API, Resource]
+    
+    - type: file
+      target: ../legacy-erp/backend/catalog-info.yaml
+    
+    - type: file
+      target: ../legacy-erp/frontend/catalog-info.yaml
+    
+    # Mobile App 프로젝트
+    - type: file
+      target: ../mobile-app/catalog-info.yaml
+    
+    # Terraform 인프라
+    - type: file
+      target: ../infra-terraform/catalog-info.yaml
+    
+    # ===== GitHub 통합 (선택사항) =====
+    # GitHub 저장소를 직접 참조할 수도 있습니다
+    - type: url
+      target: https://github.com/vntg/another-project/blob/main/catalog-info.yaml
+      rules:
+        - allow: [Component, API]
+```
+
+**Step 3: 조직 구조에 팀 추가 (필요시)**
+
+```yaml
+# rnd-backstage/examples/org.yaml
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: erp-team
+  description: 레거시 ERP 유지보수 팀
+spec:
+  type: team
+  profile:
+    displayName: ERP Team
+    email: erp@vntgcorp.com
+  parent: engineering
+  children: []
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: mobile-team
+  description: 모바일 앱 개발 팀
+spec:
+  type: team
+  profile:
+    displayName: Mobile Team
+    email: mobile@vntgcorp.com
+  parent: engineering
+  children: []
+```
+
+**Step 4: Backstage 재시작**
+
+```bash
+cd /Users/seojiwon/VNTG_PROJECT/rnd-backstage
+yarn dev
+```
+
+### 11.4 레포지토리 위치별 관리 전략
+
+Backstage는 레포지토리의 위치와 관계없이 카탈로그에 등록할 수 있습니다. 
+각 방법마다 장단점이 있으므로, 조직의 상황에 맞는 전략을 선택하세요.
+
+#### 11.4.1 로컬 레포지토리 (권장)
+
+**설명:**
+로컬 파일 시스템에 모든 레포지토리를 클론하고, 상대 경로로 참조하는 방식입니다.
+개발 환경에서 가장 효율적이며, 실시간 동기화가 가능합니다.
+
+**장점:**
+- ⚡ **빠른 동기화**: 네트워크 지연 없이 즉시 카탈로그 업데이트
+- 🔄 **실시간 반영**: 파일 변경 시 자동 감지 (watch mode)
+- 🧪 **로컬 테스트**: 프로덕션 배포 전 로컬에서 검증 가능
+- 🔒 **오프라인 작업**: 인터넷 연결 없이도 Backstage 사용 가능
+- 🐛 **디버깅 용이**: 로컬 파일을 직접 수정하며 테스트 가능
+
+**단점:**
+- 💾 디스크 공간 사용 (모든 레포를 클론해야 함)
+- 🔄 정기적인 git pull 필요
+- 🖥️ 로컬 환경에만 적용 (팀원 각자 설정 필요)
+
+**사용 시나리오:**
+- 개발 환경 (`yarn dev`)
+- 소규모 팀 (5-10개 레포)
+- 자주 변경되는 카탈로그 구조를 테스트할 때
+
+**구조:**
+```
+/Users/seojiwon/VNTG_PROJECT/
+├── rnd-backstage/          # Backstage 포털
+├── RND-NX/                 # 프로젝트 1
+├── legacy-erp/             # 프로젝트 2
+├── mobile-app/             # 프로젝트 3
+└── infra-terraform/        # 프로젝트 4
+```
+
+**app-config.yaml 설정:**
+```yaml
+catalog:
+  locations:
+    # 상대 경로 사용 (packages/backend/가 기준)
+    - type: file
+      target: ../RND-NX/catalog-info.yaml
+    - type: file
+      target: ../legacy-erp/catalog-info.yaml
+    - type: file
+      target: ../mobile-app/catalog-info.yaml
+    
+    # Glob 패턴으로 여러 파일 한번에
+    - type: file
+      target: ../RND-NX/apps/**/catalog-info.yaml
+    - type: file
+      target: ../RND-NX/libs/**/catalog-info.yaml
+```
+
+**설정 후 확인:**
+```bash
+# Backstage 실행
+cd /Users/seojiwon/VNTG_PROJECT/rnd-backstage
+yarn dev
+
+# 브라우저에서 확인
+# http://localhost:3000/catalog
+# - 모든 레포의 컴포넌트가 표시되는지 확인
+# - 파일을 수정하고 자동 업데이트되는지 확인
+```
+
+#### 11.4.2 GitHub URL 참조
+
+**설명:**
+GitHub에 호스팅된 레포지토리의 파일을 URL로 직접 참조하는 방식입니다.
+로컬에 클론하지 않고도 원격 레포지토리의 카탈로그를 가져올 수 있습니다.
+
+**장점:**
+- 🌐 **로컬 클론 불필요**: 디스크 공간 절약, 설정 간단
+- 🌍 **원격 팀 협업**: 다른 지역/팀의 레포지토리도 즉시 통합
+- 📌 **최신 상태 유지**: 항상 GitHub의 main/master 브랜치를 참조
+- 🚀 **빠른 시작**: 설정 파일만 수정하면 즉시 사용 가능
+- 🔐 **권한 관리 용이**: GitHub의 권한 시스템 활용
+
+**단점:**
+- ⏱️ **동기화 지연**: 설정된 주기(예: 30분)마다 업데이트
+- 🌐 **네트워크 의존성**: 인터넷 연결 필수
+- 📊 **API 제한**: GitHub API rate limit (인증 시 5,000회/시간)
+- 🐛 **디버깅 어려움**: 문제 발생 시 로컬에서 직접 수정 불가
+- 🔒 **Private 레포**: Personal Access Token 필요
+
+**사용 시나리오:**
+- 프로덕션 환경
+- 대규모 팀 (10개 이상 레포)
+- 외부 팀이나 다른 조직의 레포를 통합할 때
+- 레포지토리를 로컬에 클론하기 어려운 경우
+
+**app-config.yaml 설정:**
+```yaml
+catalog:
+  locations:
+    # GitHub URL로 직접 참조
+    - type: url
+      target: https://github.com/vntg/RND-NX/blob/main/catalog-info.yaml
+      rules:
+        - allow: [Component, System, API, Resource]
+    
+    - type: url
+      target: https://github.com/vntg/legacy-erp/blob/main/catalog-info.yaml
+    
+    # 특정 브랜치 지정 가능
+    - type: url
+      target: https://github.com/vntg/mobile-app/blob/develop/catalog-info.yaml
+    
+    # Glob 패턴으로 여러 파일 참조
+    - type: url
+      target: https://github.com/vntg/data-platform/blob/main/*/catalog-info.yaml
+
+# GitHub 인증 설정 (Private 레포용)
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}  # Personal Access Token
+      # 필요한 권한: repo (전체 저장소 액세스)
+```
+
+**GitHub Token 생성 방법:**
+```bash
+# 1. GitHub 웹사이트에서:
+# Settings → Developer settings → Personal access tokens → Generate new token
+# 필요한 권한: repo (Full control of private repositories)
+
+# 2. 환경 변수로 설정:
+echo "GITHUB_TOKEN=ghp_xxxxxxxxxxxx" >> .env
+
+# 3. Backstage 재시작
+yarn dev
+```
+
+**주의사항:**
+- GitHub API rate limit를 초과하지 않도록 주의
+- Token을 코드에 직접 넣지 말고 환경 변수 사용
+- 정기적인 Token 갱신 필요 (만료 기간 설정)
+
+#### 11.4.3 GitHub Discovery (자동 검색)
+
+**설명:**
+GitHub Organization의 모든 레포지토리를 자동으로 스캔하여 `catalog-info.yaml` 파일을 찾아 등록하는 방식입니다.
+**가장 강력하고 확장 가능한 방법**으로, 대규모 조직에 적합합니다.
+
+**핵심 개념:**
+Backstage가 GitHub Organization을 주기적으로 스캔하여:
+1. 모든 레포지토리를 검색
+2. 각 레포에서 `catalog-info.yaml` 파일을 찾음
+3. 자동으로 카탈로그에 등록
+4. 새로운 레포가 추가되면 자동 검색
+
+**장점:**
+- 🤖 **완전 자동화**: 새 레포 추가 시 수동 설정 불필요
+- 📈 **확장성**: 수백 개의 레포지토리도 관리 가능
+- 🔄 **자동 동기화**: 설정된 주기마다 자동 업데이트
+- 🎯 **필터링**: 특정 레포만 선택적으로 포함/제외 가능
+- 🏢 **조직 레벨 관리**: Organization 전체를 한번에 관리
+- 📋 **표준화**: 모든 레포가 동일한 규칙으로 등록됨
+
+**단점:**
+- ⚙️ **초기 설정 복잡**: 세밀한 필터 설정 필요
+- 🐢 **초기 스캔 시간**: 레포가 많으면 첫 스캔이 오래 걸림
+- 📊 **API 사용량**: Organization 전체 스캔으로 많은 API 호출
+- 🔍 **디버깅 어려움**: 자동화로 인한 문제 추적 어려움
+- 💰 **비용**: 대규모 Organization의 경우 GitHub API 비용
+
+**사용 시나리오:**
+- 대규모 조직 (20개 이상 레포)
+- 지속적으로 새로운 프로젝트가 생성되는 환경
+- 표준화된 카탈로그 구조를 강제하고 싶을 때
+- DevOps 팀이 중앙에서 모든 레포를 관리할 때
+
+**app-config.yaml 설정:**
+```yaml
+catalog:
+  locations:
+    # 기본 방법: GitHub Organization 전체 스캔
+    - type: github-discovery
+      target: https://github.com/vntg
+      rules:
+        - allow: [Component, System, API, Resource, Template]
+  
+  providers:
+    github:
+      # Provider 이름 (여러 Organization 관리 시 구분용)
+      vntgOrg:
+        organization: 'vntg'              # GitHub Organization 이름
+        catalogPath: '/catalog-info.yaml'  # 검색할 파일 경로
+        
+        # 필터 설정
+        filters:
+          branch: 'main'                   # 특정 브랜치만 스캔
+          repository: '.*'                 # 정규식: 모든 레포
+          
+          # 특정 레포만 포함
+          # repository: '^(RND-NX|legacy-erp|mobile-app)$'
+          
+          # 특정 레포 제외
+          # repository: '^(?!.*-archived).*$'  # -archived로 끝나는 레포 제외
+          
+          # 여러 조건
+          # repository:
+          #   - '^frontend-.*'   # frontend-로 시작하는 레포
+          #   - '^backend-.*'    # backend-로 시작하는 레포
+        
+        # 자동 동기화 스케줄
+        schedule:
+          frequency: { minutes: 30 }       # 30분마다 스캔
+          timeout: { minutes: 3 }          # 스캔 타임아웃
+          initialDelay: { seconds: 15 }    # 시작 후 15초 대기
+
+# GitHub 인증 (필수)
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
+      # Organization 스캔을 위해서는 다음 권한 필요:
+      # - repo: Private 레포 액세스
+      # - read:org: Organization 정보 읽기
+```
+
+**고급 설정 예시:**
+
+```yaml
+# 여러 Organization 관리
+catalog:
+  providers:
+    github:
+      # 메인 Organization
+      mainOrg:
+        organization: 'vntg'
+        catalogPath: '/catalog-info.yaml'
+        filters:
+          branch: 'main'
+          repository: '.*'
+        schedule:
+          frequency: { minutes: 30 }
+      
+      # 외부 파트너 Organization
+      partnerOrg:
+        organization: 'partner-company'
+        catalogPath: '/backstage/catalog-info.yaml'  # 다른 경로
+        filters:
+          branch: 'production'
+          repository: '^public-.*'  # public-로 시작하는 것만
+        schedule:
+          frequency: { hours: 2 }  # 2시간마다 (덜 자주)
+      
+      # 개인 레포 (자신의 계정)
+      personalRepos:
+        organization: 'seojiwon'  # GitHub 사용자 이름
+        catalogPath: '/catalog-info.yaml'
+        filters:
+          branch: 'main'
+        schedule:
+          frequency: { hours: 6 }  # 6시간마다
+```
+
+**필터링 패턴 예시:**
+
+```yaml
+filters:
+  # 1. 특정 프리픽스만
+  repository: '^(frontend-|backend-|infra-).*'
+  
+  # 2. 특정 서픽스 제외
+  repository: '^(?!.*-archived$).*'
+  
+  # 3. 특정 단어 포함
+  repository: '.*-service$'  # -service로 끝나는 것만
+  
+  # 4. 여러 브랜치
+  branch: '(main|master|production)'
+  
+  # 5. 특정 레포 명시적 나열
+  repository: '^(RND-NX|tech-blog|mobile-app)$'
+```
+
+**동작 흐름:**
+
+```
+1. Backstage 시작
+   ↓
+2. 15초 대기 (initialDelay)
+   ↓
+3. GitHub Organization 스캔 시작
+   ↓
+4. 모든 레포지토리 목록 가져오기
+   ↓
+5. 필터 적용 (branch, repository)
+   ↓
+6. 각 레포에서 catalog-info.yaml 검색
+   ↓
+7. 발견된 파일을 카탈로그에 등록
+   ↓
+8. 30분 대기
+   ↓
+9. 3단계로 돌아가서 반복
+```
+
+**모니터링 및 디버깅:**
+
+```bash
+# Backstage 로그 확인
+yarn dev
+
+# 로그에서 다음을 확인:
+# [catalog] GitHub provider 'vntgOrg' discovered 42 repositories
+# [catalog] Processed 127 catalog entities
+# [catalog] Failed to process 3 entities (errors will be shown)
+
+# 실패한 엔티티 확인
+# http://localhost:3000/catalog?filters[kind]=location
+# - Unprocessed Entities 섹션에서 오류 확인
+```
+
+**비용 고려사항:**
+
+| Organization 크기 | 레포 수 | API 호출/시간 | 권장 주기 |
+|-----------------|--------|-------------|----------|
+| 소규모 | 1-20 | ~100 | 15분 |
+| 중규모 | 20-100 | ~500 | 30분 |
+| 대규모 | 100-500 | ~2,500 | 1시간 |
+| 초대규모 | 500+ | ~10,000+ | 2-4시간 |
+
+**참고:** GitHub API rate limit은 인증된 요청 기준 5,000회/시간입니다.
+
+### 11.5 실전 예시: 3개 레포지토리 통합
+
+#### 시나리오
+- **RND-NX**: 차세대 프레임워크 (NestJS, React)
+- **legacy-erp**: 레거시 ERP (Spring Boot, Angular)
+- **data-platform**: 데이터 플랫폼 (Python, Airflow)
+
+#### app-config.yaml 통합 설정
+
+```yaml
+# /Users/seojiwon/VNTG_PROJECT/rnd-backstage/app-config.yaml
+
+catalog:
+  rules:
+    - allow: [Component, System, API, Resource, Location, Template, Domain, Group, User]
+  
+  locations:
+    # ===== Backstage 내부 카탈로그 =====
+    - type: file
+      target: ../../catalog/all.yaml
+    
+    - type: file
+      target: ../../examples/org.yaml
+    
+    # ===== RND-NX 프레임워크 =====
+    - type: file
+      target: ../RND-NX/catalog-info.yaml  # System 정의
+    
+    - type: file
+      target: ../RND-NX/apps/**/catalog-info.yaml
+    
+    - type: file
+      target: ../RND-NX/libs/**/catalog-info.yaml
+    
+    # ===== Legacy ERP =====
+    - type: file
+      target: ../legacy-erp/catalog-info.yaml  # System 정의
+    
+    - type: file
+      target: ../legacy-erp/backend/catalog-info.yaml
+    
+    - type: file
+      target: ../legacy-erp/frontend/catalog-info.yaml
+    
+    # ===== Data Platform =====
+    - type: file
+      target: ../data-platform/catalog-info.yaml  # System 정의
+    
+    - type: file
+      target: ../data-platform/airflow/dags/**/catalog-info.yaml
+    
+    - type: file
+      target: ../data-platform/pipelines/**/catalog-info.yaml
+```
+
+#### 카탈로그 구조
+
+```
+Backstage 카탈로그
+│
+├── System: rnd-nx-framework
+│   ├── Domain: backend-services
+│   │   ├── Component: tech-blog-api-server
+│   │   └── Component: be-auth-library
+│   └── Domain: frontend-applications
+│       └── Component: tech-blog-user-client
+│
+├── System: legacy-erp-system
+│   ├── Domain: erp-backend
+│   │   └── Component: legacy-erp-backend
+│   └── Domain: erp-frontend
+│       └── Component: legacy-erp-frontend
+│
+└── System: data-platform-system
+    ├── Domain: data-pipelines
+    │   ├── Component: user-analytics-pipeline
+    │   └── Component: sales-etl-pipeline
+    └── Domain: orchestration
+        └── Component: airflow-scheduler
+```
+
+### 11.6 크로스 레포지토리 의존성 관리
+
+**핵심 개념:**
+Backstage의 가장 강력한 기능 중 하나는 **서로 다른 레포지토리의 컴포넌트 간 의존성을 표현하고 시각화**할 수 있다는 점입니다.
+
+#### 왜 중요한가?
+
+마이크로서비스 아키텍처나 멀티 레포 환경에서는:
+- 서비스 A(레포1)가 서비스 B(레포2)의 API를 호출
+- 프론트엔드(레포3)가 백엔드(레포4)의 API를 사용
+- 공통 라이브러리(레포5)를 여러 프로젝트에서 참조
+
+이러한 **크로스 레포 의존성을 관리하지 않으면**:
+- 어떤 서비스가 어떤 API를 사용하는지 파악 어려움
+- API 변경 시 영향받는 서비스를 찾기 어려움
+- 시스템 전체 아키텍처를 이해하기 어려움
+- 장애 발생 시 원인 추적 어려움
+
+#### Backstage의 의존성 표현 방법
+
+Backstage는 3가지 관계 타입으로 의존성을 표현합니다:
+
+| 관계 타입 | 설명 | 사용 예시 |
+|----------|------|----------|
+| `dependsOn` | 다른 컴포넌트나 리소스에 의존 | 서비스가 데이터베이스에 의존 |
+| `consumesApis` | 다른 컴포넌트의 API를 사용 | 프론트엔드가 백엔드 API 호출 |
+| `providesApis` | 자신이 제공하는 API 정의 | 백엔드 서비스가 REST API 제공 |
+
+#### 실전 예시 1: RND-NX 서비스 → Data Platform API
+
+**시나리오:**
+- RND-NX 레포의 `analytics-service`가 
+- Data Platform 레포의 `analytics-api`를 호출하고
+- Data Platform 레포의 `data-warehouse` 데이터베이스를 사용
+
+**RND-NX/apps/analytics-service/catalog-info.yaml:**
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: analytics-service
+  description: 분석 서비스 (Data Platform API 사용)
+  tags:
+    - analytics
+    - nestjs
+    - cross-repo-dependency
+  annotations:
+    github.com/project-slug: vntg/RND-NX
+spec:
+  type: service
+  lifecycle: production
+  owner: group:backend-team
+  system: rnd-nx-framework  # 자신이 속한 System
+  
+  # ✅ 다른 레포지토리의 API를 소비
+  consumesApis:
+    - data-platform-analytics-api  # data-platform 레포에서 정의
+  
+  # ✅ 다른 레포지토리의 리소스에 의존
+  dependsOn:
+    - resource:data-warehouse      # data-platform 레포에서 정의
+    - component:be-auth-library    # 같은 레포의 컴포넌트도 가능
+```
+
+**data-platform/catalog-info.yaml:**
+```yaml
+# API 정의 (다른 레포에서 참조 가능)
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: data-platform-analytics-api  # ← RND-NX에서 이 이름으로 참조
+  description: 데이터 플랫폼 분석 API
+  tags:
+    - analytics
+    - data
+    - openapi
+spec:
+  type: openapi
+  lifecycle: production
+  owner: group:data-team
+  system: data-platform-system
+  definition:
+    $text: https://data-platform.internal/api/openapi.json
+
+---
+# Resource 정의 (다른 레포에서 참조 가능)
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: data-warehouse  # ← RND-NX에서 이 이름으로 참조
+  description: 중앙 데이터 웨어하우스 (BigQuery)
+  tags:
+    - database
+    - bigquery
+    - data-warehouse
+spec:
+  type: database
+  lifecycle: production
+  owner: group:data-team
+  system: data-platform-system
+```
+
+**Backstage에서 보이는 의존성 그래프:**
+```
+┌─────────────────────────────────────────┐
+│ System: rnd-nx-framework                │
+│                                         │
+│  ┌──────────────────────────┐           │
+│  │ analytics-service        │           │
+│  │ (RND-NX 레포)            │           │
+│  └──────────┬───────┬───────┘           │
+│             │       │                   │
+└─────────────┼───────┼───────────────────┘
+              │       │
+    consumesApis     dependsOn
+              │       │
+┌─────────────▼───────▼───────────────────┐
+│ System: data-platform-system            │
+│                                         │
+│  ┌─────────────────────┐                │
+│  │ analytics-api       │                │
+│  │ (data-platform 레포)│                │
+│  └─────────────────────┘                │
+│                                         │
+│  ┌─────────────────────┐                │
+│  │ data-warehouse      │                │
+│  │ (data-platform 레포)│                │
+│  └─────────────────────┘                │
+└─────────────────────────────────────────┘
+```
+
+#### 실전 예시 2: 프론트엔드 → 백엔드 → 데이터베이스
+
+**시나리오:**
+- Frontend 레포의 `user-dashboard`가
+- Backend 레포의 `user-api`를 호출하고
+- Backend는 `user-database`에 의존
+
+**frontend/apps/user-dashboard/catalog-info.yaml:**
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: user-dashboard
+  description: 사용자 대시보드 (React)
+spec:
+  type: website
+  lifecycle: production
+  owner: group:frontend-team
+  system: user-management-system
+  
+  # 백엔드 API 사용
+  consumesApis:
+    - user-rest-api  # backend 레포에서 정의
+  
+  # UI 라이브러리 의존
+  dependsOn:
+    - component:design-system-library  # 같은 레포 또는 다른 레포
+```
+
+**backend/apps/user-service/catalog-info.yaml:**
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: user-service
+  description: 사용자 관리 서비스 (NestJS)
+spec:
+  type: service
+  lifecycle: production
+  owner: group:backend-team
+  system: user-management-system
+  
+  # 자신이 제공하는 API
+  providesApis:
+    - user-rest-api  # frontend가 이것을 소비
+  
+  # 데이터베이스 의존
+  dependsOn:
+    - resource:user-database  # infra 레포에서 정의
+```
+
+**infra/databases/catalog-info.yaml:**
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: user-database
+  description: 사용자 정보 데이터베이스 (PostgreSQL)
+spec:
+  type: database
+  lifecycle: production
+  owner: group:devops-team
+  system: user-management-system
+```
+
+**backend/apis/catalog-info.yaml:**
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: user-rest-api
+  description: 사용자 관리 REST API
+spec:
+  type: openapi
+  lifecycle: production
+  owner: group:backend-team
+  system: user-management-system
+  definition:
+    $text: https://api.example.com/users/openapi.json
+```
+
+#### 의존성 그래프 시각화
+
+Backstage에서 컴포넌트 페이지를 열면 다음과 같은 정보를 볼 수 있습니다:
+
+**"Dependencies" 탭:**
+- 📊 시각적 그래프로 의존성 표시
+- ⬆️ 이 컴포넌트가 의존하는 것들 (Depends On)
+- ⬇️ 이 컴포넌트에 의존하는 것들 (Dependency Of)
+- 🔗 크로스 레포 의존성도 동일하게 표시
+
+**"API" 탭:**
+- 제공하는 API 목록 (Provides)
+- 사용하는 API 목록 (Consumes)
+- API 스펙 문서 링크
+
+#### 의존성 추적의 실무 활용
+
+**1. 영향 분석 (Impact Analysis)**
+```
+Q: user-database를 업그레이드하면 어떤 서비스가 영향받나?
+
+A: Backstage에서 user-database 페이지 열기
+   → "Dependency Of" 섹션 확인
+   → user-service가 의존함을 확인
+   → user-service 페이지 열기
+   → "Dependency Of" 섹션 확인
+   → user-dashboard가 API를 사용함을 확인
+   
+결론: user-database → user-service → user-dashboard 순서로 영향
+```
+
+**2. 장애 추적 (Incident Tracking)**
+```
+Q: user-dashboard에서 에러가 발생. 원인은?
+
+A: Backstage에서 user-dashboard 페이지 열기
+   → "Dependencies" 탭 확인
+   → user-rest-api를 사용함을 확인
+   → user-service 페이지 확인
+   → user-database에 의존함을 확인
+   → Monitoring 링크로 각 컴포넌트 상태 확인
+   
+결론: 의존성 체인을 따라 장애 원인 추적 가능
+```
+
+**3. 마이그레이션 계획 (Migration Planning)**
+```
+Q: legacy-system을 새 시스템으로 마이그레이션. 어떤 서비스를 먼저?
+
+A: Backstage에서 의존성 그래프 분석
+   → 가장 많이 의존받는 컴포넌트 파악
+   → 의존성이 없는 말단 컴포넌트부터 마이그레이션
+   
+결론: Bottom-up 마이그레이션 계획 수립
+```
+
+### 11.7 모범 사례
+
+#### ✅ DO: 권장 사항
+
+1. **각 레포지토리는 독립적인 catalog-info.yaml 유지**
+   - 레포지토리가 Backstage 없이도 자체 문서화되어 있어야 함
+
+2. **공통 System/Domain은 Backstage 레포에서 정의**
+   - `rnd-backstage/catalog/systems/`에 상위 레벨 정의
+   - 각 레포는 Component 레벨만 관리
+
+3. **GitHub Discovery 사용 (대규모 조직)**
+   - 10개 이상의 레포지토리가 있다면 자동 검색 권장
+
+4. **팀별로 Group 먼저 정의**
+   - 모든 Component의 owner가 유효한 Group이어야 함
+
+5. **네이밍 컨벤션 유지**
+   - 레포지토리 이름을 System 이름에 반영
+   - 예: `legacy-erp` 레포 → `legacy-erp-system` System
+
+#### ❌ DON'T: 피해야 할 것
+
+1. **중복된 System 정의 금지**
+   - 하나의 System은 한 곳에서만 정의
+
+2. **절대 경로 사용 금지**
+   - 상대 경로나 URL 사용
+
+3. **순환 의존성 생성 금지**
+   - Component A → B → C → A
+
+4. **민감 정보 포함 금지**
+   - 데이터베이스 비밀번호, API 키 등
+
+### 11.8 FAQ
+
+**Q: 레포지토리를 추가할 때마다 Backstage를 재시작해야 하나요?**
+
+A: 아니요. `app-config.yaml`만 변경하면 자동으로 재로드됩니다. 
+개발 모드(`yarn dev`)에서는 즉시 반영되며, 프로덕션에서는 설정된 주기(예: 30분)마다 자동으로 업데이트됩니다.
+
+**Q: GitHub Private 레포지토리도 추가할 수 있나요?**
+
+A: 네, GitHub Personal Access Token을 `app-config.yaml`에 설정하면 됩니다:
+```yaml
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}  # .env 파일에서 관리
+```
+
+**Q: 다른 Git 플랫폼(GitLab, Bitbucket)도 지원하나요?**
+
+A: 네, Backstage는 GitLab, Bitbucket, Azure DevOps 등을 모두 지원합니다:
+```yaml
+integrations:
+  gitlab:
+    - host: gitlab.com
+      token: ${GITLAB_TOKEN}
+  
+  bitbucket:
+    - host: bitbucket.org
+      username: ${BITBUCKET_USERNAME}
+      appPassword: ${BITBUCKET_APP_PASSWORD}
+```
+
+**Q: 수백 개의 레포지토리가 있는데 모두 추가해야 하나요?**
+
+A: 아니요. 단계적으로 추가하는 것을 권장합니다:
+1. **Phase 1**: 핵심 프로젝트 5-10개
+2. **Phase 2**: 활발히 개발 중인 프로젝트
+3. **Phase 3**: GitHub Discovery로 자동 확장
+
+---
+
+## 12. 문제 해결 및 FAQ
+
+### 12.1 일반적인 문제
 
 #### Q1: 컴포넌트가 카탈로그에 나타나지 않습니다.
 **A**: 다음을 확인하세요:
@@ -2986,15 +3934,66 @@ audit:
 
 ---
 
-## 13. 변경 이력
+## 13. 요약: 멀티 레포 관리 핵심 원칙
+
+### 핵심 개념
+
+✅ **단일 Backstage, 다수 레포지토리**
+- `rnd-backstage` 하나로 조직의 모든 프로젝트 관리 가능
+- 각 레포지토리는 독립적으로 `catalog-info.yaml` 유지
+- Backstage의 `app-config.yaml`에 경로만 추가
+
+✅ **3가지 통합 방법**
+1. **로컬 파일** (`type: file`): 빠르고 실시간, 로컬 개발 환경에 적합
+2. **GitHub URL** (`type: url`): 원격 레포, 로컬 클론 불필요
+3. **GitHub Discovery**: 대규모 조직, 자동 검색 및 동기화
+
+✅ **크로스 레포 의존성 지원**
+- 서로 다른 레포지토리의 컴포넌트 간 의존성 표현 가능
+- `dependsOn`, `consumesApis`, `providesApis`로 관계 정의
+
+### 실무 적용 예시
+
+```yaml
+# rnd-backstage/app-config.yaml
+catalog:
+  locations:
+    # 프로젝트 1: RND-NX
+    - type: file
+      target: ../RND-NX/catalog-info.yaml
+    
+    # 프로젝트 2: Legacy ERP
+    - type: file
+      target: ../legacy-erp/catalog-info.yaml
+    
+    # 프로젝트 3: Mobile App
+    - type: url
+      target: https://github.com/vntg/mobile-app/blob/main/catalog-info.yaml
+    
+    # 자동 검색: 모든 GitHub 레포
+    - type: github-discovery
+      target: https://github.com/vntg
+```
+
+### 시작 가이드
+
+1. 새 레포에 `catalog-info.yaml` 작성
+2. `rnd-backstage/app-config.yaml`에 경로 추가
+3. 팀 정의 (필요시)
+4. Backstage 재시작 (개발 모드는 자동 반영)
+
+---
+
+## 14. 변경 이력
 
 | 버전 | 날짜 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | 1.0.0 | 2025-10-21 | AI Assistant | 초기 문서 작성 |
+| 1.1.0 | 2025-10-21 | AI Assistant | 멀티 레포지토리 관리 전략 섹션 추가 |
 
 ---
 
-## 14. 승인
+## 15. 승인
 
 | 역할 | 이름 | 서명 | 날짜 |
 |------|------|------|------|

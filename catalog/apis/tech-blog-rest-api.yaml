@@ -1,0 +1,26 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: tech-blog-rest-api
+  description: Tech Blog RESTful API - 게시글, 댓글, 사용자 관리
+  tags:
+    - rest
+    - openapi
+    - nestjs
+  links:
+    - url: http://localhost:3001/api-docs
+      title: API Documentation (Swagger)
+      icon: docs
+    - url: http://localhost:3001/api-docs-json
+      title: OpenAPI Spec (JSON)
+      icon: code
+spec:
+  type: openapi
+  lifecycle: production
+  owner: group:backend-team
+  system: rnd-nx-framework
+  # OpenAPI 스펙을 실행 중인 서버에서 가져오기
+  definition:
+    $text: http://localhost:3001/api-docs-json
+

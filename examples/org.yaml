@@ -17,9 +17,10 @@ metadata:
     backstage.io/managed-by-location: 'url:file:///examples/org.yaml'
 spec:
   profile:
-    displayName: Ji Won
+    displayName: Ji Won Seo
     email: jidaisy@vntgcorp.com
-  memberOf: [admins, guests]
+    picture: https://avatars.githubusercontent.com/u/xxxxx
+  memberOf: [platform-team, backend-team, admins, frontend-team]
 ---
 # # GitHub OAuth User - Add your GitHub username here
 # apiVersion: backstage.io/v1alpha1
@@ -67,6 +68,80 @@ spec:
   profile:
     displayName: Admin Group
     description: 시스템 전체 관리 권한
+  children: []
+---
+# Platform Team
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-team
+  description: 플랫폼 엔지니어링 팀
+spec:
+  type: team
+  profile:
+    displayName: Platform Engineering Team
+    email: platform@vntgcorp.com
+    picture: https://example.com/team-logo.png
+  children:
+    - backend-team
+    - frontend-team
+    - design-team
+    - devops-team
+
+---
+# Backend Team
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: backend-team
+spec:
+  type: team
+  profile:
+    displayName: Backend Team
+    email: backend@vntgcorp.com
+  parent: platform-team
+  children: []
+
+---
+# Frontend Team
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: frontend-team
+spec:
+  type: team
+  profile:
+    displayName: Frontend Team
+    email: frontend@vntgcorp.com
+  parent: platform-team
+  children: []
+
+---
+# Design Team
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: design-team
+spec:
+  type: team
+  profile:
+    displayName: Design System Team
+    email: design@vntgcorp.com
+  parent: platform-team
+  children: []
+
+---
+# DevOps Team
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: devops-team
+spec:
+  type: team
+  profile:
+    displayName: DevOps Team
+    email: devops@vntgcorp.com
+  parent: platform-team
   children: []
 ---
 

@@ -58,6 +58,11 @@ import {
   isKubernetesAvailable,
 } from '@backstage/plugin-kubernetes';
 
+import {
+  EntityTechInsightsScorecardCard,
+  EntityTechInsightsScorecardContent,
+} from '@backstage-community/plugin-tech-insights';
+
 const techdocsContent = (
   <EntityTechdocsContent>
     <TechDocsAddons>
@@ -140,6 +145,13 @@ const overviewContent = (
     <Grid item md={8} xs={12}>
       <EntityHasSubcomponentsCard variant="gridItem" />
     </Grid>
+    
+    <Grid item md={6} xs={12}>
+      <EntityTechInsightsScorecardCard
+        title="기술 품질 점검"
+        description="Tech Insights Scorecard"
+      />
+    </Grid>
   </Grid>
 );
 
@@ -186,6 +198,13 @@ const serviceEntityPage = (
     <EntityLayout.Route path="/docs" title="Docs">
       {techdocsContent}
     </EntityLayout.Route>
+
+    <EntityLayout.Route path="/tech-insights" title="Tech Insights">
+      <EntityTechInsightsScorecardContent
+        title="기술 품질 점검"
+        description="컴포넌트의 기술적 품질과 모범 사례 준수 현황"
+      />
+    </EntityLayout.Route>
   </EntityLayout>
 );
 
@@ -221,6 +240,13 @@ const websiteEntityPage = (
     <EntityLayout.Route path="/docs" title="Docs">
       {techdocsContent}
     </EntityLayout.Route>
+
+    <EntityLayout.Route path="/tech-insights" title="Tech Insights">
+      <EntityTechInsightsScorecardContent
+        title="기술 품질 점검"
+        description="컴포넌트의 기술적 품질과 모범 사례 준수 현황"
+      />
+    </EntityLayout.Route>
   </EntityLayout>
 );
 
@@ -239,6 +265,13 @@ const defaultEntityPage = (
 
     <EntityLayout.Route path="/docs" title="Docs">
       {techdocsContent}
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/tech-insights" title="Tech Insights">
+      <EntityTechInsightsScorecardContent
+        title="기술 품질 점검"
+        description="엔티티의 기술적 품질과 모범 사례 준수 현황"
+      />
     </EntityLayout.Route>
   </EntityLayout>
 );
@@ -396,6 +429,42 @@ const domainPage = (
   </EntityLayout>
 );
 
+const resourcePage = (
+  <EntityLayout>
+    <EntityLayout.Route path="/" title="Overview">
+      <Grid container spacing={3} alignItems="stretch">
+        {entityWarningContent}
+        <Grid item md={6}>
+          <EntityAboutCard variant="gridItem" />
+        </Grid>
+        <Grid item md={6} xs={12}>
+          <EntityCatalogGraphCard variant="gridItem" height={400} />
+        </Grid>
+        <Grid item md={4} xs={12}>
+          <EntityLinksCard />
+        </Grid>
+        <Grid item md={6} xs={12}>
+          <EntityTechInsightsScorecardCard
+            title="데이터베이스 상태 점검"
+            description="DB 연결, 응답 시간, 디스크 사용률 모니터링"
+          />
+        </Grid>
+      </Grid>
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/tech-insights" title="Tech Insights">
+      <EntityTechInsightsScorecardContent
+        title="리소스 품질 점검"
+        description="리소스 상태에 대한 상세 인사이트"
+      />
+    </EntityLayout.Route>
+
+    <EntityLayout.Route path="/docs" title="Docs">
+      {techdocsContent}
+    </EntityLayout.Route>
+  </EntityLayout>
+);
+
 export const entityPage = (
   <EntitySwitch>
     <EntitySwitch.Case if={isKind('component')} children={componentPage} />
@@ -404,6 +473,7 @@ export const entityPage = (
     <EntitySwitch.Case if={isKind('user')} children={userPage} />
     <EntitySwitch.Case if={isKind('system')} children={systemPage} />
     <EntitySwitch.Case if={isKind('domain')} children={domainPage} />
+    <EntitySwitch.Case if={isKind('resource')} children={resourcePage} />
 
     <EntitySwitch.Case>{defaultEntityPage}</EntitySwitch.Case>
   </EntitySwitch>

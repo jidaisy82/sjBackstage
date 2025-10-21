@@ -24,6 +24,7 @@ import { apis } from './apis';
 import { entityPage } from './components/catalog/EntityPage';
 import { searchPage } from './components/search/SearchPage';
 import { Root } from './components/Root';
+import { TechInsightsDashboard } from './components/techInsights/TechInsightsDashboard';
 
 import {
   AlertDisplay,
@@ -124,6 +125,7 @@ const routes = (
     <Route path="/settings" element={<UserSettingsPage />} />
     <Route path="/catalog-graph" element={<CatalogGraphPage />} />
     <Route path="/notifications" element={<NotificationsPage />} />
+    <Route path="/tech-insights" element={<TechInsightsDashboard />} />
   </FlatRoutes>
 );
 

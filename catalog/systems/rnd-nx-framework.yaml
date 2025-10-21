@@ -1,0 +1,25 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: rnd-nx-framework
+  description: 차세대 통합 개발 프레임워크 - Nx 모노레포 기반
+  tags:
+    - nx
+    - monorepo
+    - enterprise
+    - framework
+  annotations:
+    github.com/project-slug: vntg/RND-NX
+    backstage.io/techdocs-ref: url:https://github.com/vntg/RND-NX
+  links:
+    - url: https://github.com/vntg/RND-NX
+      title: GitHub Repository
+      icon: github
+    - url: https://nx.dev
+      title: Nx Documentation
+      icon: docs
+spec:
+  owner: group:platform-team
+  domain: engineering
+

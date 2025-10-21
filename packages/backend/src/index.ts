@@ -68,4 +68,11 @@ backend.add(import('@backstage/plugin-kubernetes-backend'));
 backend.add(import('@backstage/plugin-notifications-backend'));
 backend.add(import('@backstage/plugin-signals-backend'));
 
+// Tech Insights 플러그인 추가
+backend.add(import('@backstage-community/plugin-tech-insights-backend'));
+backend.add(import('@backstage-community/plugin-tech-insights-backend-module-jsonfc'));
+
+// Tech Insights Fact Retriever 모듈 추가
+backend.add(import('./plugins/tech-insights'));
+
 backend.start();

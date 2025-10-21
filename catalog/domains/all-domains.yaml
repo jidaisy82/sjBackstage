@@ -1,0 +1,56 @@
+---
+# Domain 1: Backend Services
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: backend-services
+  description: 백엔드 API 서버 및 마이크로서비스 도메인
+  tags:
+    - backend
+    - api
+    - microservices
+spec:
+  owner: group:backend-team
+
+---
+# Domain 2: Frontend Applications
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: frontend-applications
+  description: 사용자 대면 프론트엔드 애플리케이션 도메인
+  tags:
+    - frontend
+    - react
+    - web
+spec:
+  owner: group:frontend-team
+
+---
+# Domain 3: Shared Libraries
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: shared-libraries
+  description: 재사용 가능한 공유 라이브러리 도메인
+  tags:
+    - library
+    - shared
+    - reusable
+spec:
+  owner: group:platform-team
+
+---
+# Domain 4: Infrastructure
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: infrastructure
+  description: 인프라 및 DevOps 리소스 도메인
+  tags:
+    - infrastructure
+    - devops
+    - resources
+spec:
+  owner: group:devops-team
+
