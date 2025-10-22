@@ -1,0 +1,28 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: cloudsql-test
+  description: Cloud SQL PostgreSQL - Test 환경 데이터베이스
+  tags:
+    - gcp
+    - database
+    - postgresql
+    - test
+  annotations:
+    gcp.com/project-id: your-gcp-project-test
+    gcp.com/instance-name: cloudsql-test
+  links:
+    - url: https://console.cloud.google.com/sql
+      title: GCP Cloud SQL Console
+      icon: cloud
+    - url: https://github.com/your-org/RND-NX/tree/main/infra/gcp/envs/test/cloudsql.tf
+      title: Terraform Configuration
+      icon: github
+spec:
+  type: database
+  lifecycle: experimental
+  owner: backend-team
+  system: rnd-nx-framework
+  dependsOn:
+    - resource:default/gcp-vpc-test
+

@@ -60,8 +60,9 @@ backend:
 integrations:
   github:
     - host: github.com
-      # This is a Personal Access Token or PAT from GitHub. You can find out how to generate this token, and more information
-      # about setting up the GitHub integration here: https://backstage.io/docs/integrations/github/locations#configuration
+      # Personal Access Token (공개 리포지토리 및 백업용)
+      # 로그인하지 않은 사용자나 권한이 없는 경우에만 사용됨
+      # TechDocs는 로그인한 사용자의 GitHub OAuth 토큰을 우선 사용
       token: ${GITHUB_TOKEN}
     ### Example for how to add your GitHub Enterprise instance using the API:
     # - host: ghe.example.net
@@ -83,7 +84,7 @@ proxy:
 techdocs:
   builder: 'local' # Alternatives - 'external'
   generator:
-    runIn: 'docker' # Alternatives - 'local'
+    runIn: 'local' # Alternatives - 'docker' (local은 빠르고 간단, docker는 격리된 환경)
   publisher:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
 
@@ -116,21 +117,19 @@ auth:
             - resolver: emailMatchingUserEntityProfileEmail
             # Option 3: More flexible - creates user if not exists
             # - resolver: emailLocalPartMatchingUserEntityName
-    # github:
-    #   development:
-    #     clientId: ${AUTH_GITHUB_CLIENT_ID}
-    #     clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
-    #     additionalScopes:
-    #       - user:email  # Request email access
-    #       - read:user   # Read user profile
-    #     signIn:
-    #       resolvers:
-    #         # Primary: username matching (most reliable for GitHub)
-    #         - resolver: usernameMatchingUserEntityName
-    #         # Fallback: email matching (if email is available)
-    #         - resolver: emailMatchingUserEntityProfileEmail
-    #         # Last resort: create user based on email local part
-    #         - resolver: emailLocalPartMatchingUserEntityName
+    github:
+      development:
+        clientId: ${AUTH_GITHUB_CLIENT_ID}
+        clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+        additionalScopes:
+          - user:email  # Request email access
+          - read:user   # Read user profile
+          - repo       # Access to repositories (TechDocs, Scaffolder)
+          - read:org   # Read organization data
+        signIn:
+          resolvers:
+            # GitHub는 username 매칭만 사용 (email 충돌 방지)
+            - resolver: usernameMatchingUserEntityName
   # # see https://backstage.io/docs/auth/ to learn about auth providers
   # providers:
   #   # See https://backstage.io/docs/auth/guest/provider
@@ -209,6 +208,106 @@ catalog:
       target: ../../../RND-NX/apps/tech-blog/api-server-test/catalog-info.yaml
       rules:
         - allow: [Component]
+    
+    # ===== 확장 카탈로그 (라이브러리, 인프라) =====
+    
+    # Backend Libraries
+    - type: file
+      target: ../../catalog/components/be-users-library.yaml
+      rules:
+        - allow: [Component]
+    - type: file
+      target: ../../catalog/components/be-kafka-core-library.yaml
+      rules:
+        - allow: [Component]
+    - type: file
+      target: ../../catalog/components/be-websocket-library.yaml
+      rules:
+        - allow: [Component]
+    - type: file
+      target: ../../catalog/components/be-swagger-library.yaml
+      rules:
+        - allow: [Component]
+    
+    # Frontend Libraries
+    - type: file
+      target: ../../catalog/components/fe-cursor-figma-mcp.yaml
+      rules:
+        - allow: [Component]
+    
+    # Infrastructure Components (Terraform, Ansible)
+    - type: file
+      target: ../../catalog/components/terraform-gke-module.yaml
+      rules:
+        - allow: [Component]
+    - type: file
+      target: ../../catalog/components/ansible-common-setup.yaml
+      rules:
+        - allow: [Component]
+    
+    # GCP Resources
+    - type: file
+      target: ../../catalog/resources/gke-dev-cluster.yaml
+      rules:
+        - allow: [Resource]
+    - type: file
+      target: ../../catalog/resources/gke-test-cluster.yaml
+      rules:
+        - allow: [Resource]
+    - type: file
+      target: ../../catalog/resources/gke-prod-cluster.yaml
+      rules:
+        - allow: [Resource]
+    - type: file
+      target: ../../catalog/resources/cloudsql-test.yaml
+      rules:
+        - allow: [Resource]
+    - type: file
+      target: ../../catalog/resources/gcp-vpc-dev.yaml
+      rules:
+        - allow: [Resource]
+    - type: file
+      target: ../../catalog/resources/gcp-vpc-test.yaml
+      rules:
+        - allow: [Resource]
+    - type: file
+      target: ../../catalog/resources/gcp-vpc-prod.yaml
+      rules:
+        - allow: [Resource]
+    
+    # ArgoCD Applications
+    - type: file
+      target: ../../catalog/resources/argocd-dev-shared.yaml
+      rules:
+        - allow: [Resource]
+    - type: file
+      target: ../../catalog/resources/argocd-prod-shared.yaml
+      rules:
+        - allow: [Resource]
+    - type: file
+      target: ../../catalog/resources/argocd-sample-service.yaml
+      rules:
+        - allow: [Resource]
+    
+    # Additional Infrastructure Resources
+    - type: file
+      target: ../../catalog/resources/kafka-cluster.yaml
+      rules:
+        - allow: [Resource]
+    - type: file
+      target: ../../catalog/resources/loki-grafana-stack.yaml
+      rules:
+        - allow: [Resource]
+    - type: file
+      target: ../../catalog/resources/local-docker-env.yaml
+      rules:
+        - allow: [Resource]
+    
+    # APIs
+    - type: file
+      target: ../../catalog/apis/websocket-chat-api.yaml
+      rules:
+        - allow: [API]
     
     # ===== 예시 카탈로그 (선택사항) =====
     

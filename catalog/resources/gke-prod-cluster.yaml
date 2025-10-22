@@ -1,0 +1,28 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: gke-prod-cluster
+  description: GCP Kubernetes Engine - Production 환경
+  tags:
+    - gcp
+    - kubernetes
+    - prod
+    - infrastructure
+  annotations:
+    gcp.com/project-id: your-gcp-project-prod
+    gcp.com/cluster-name: gke-prod-cluster
+  links:
+    - url: https://console.cloud.google.com/kubernetes
+      title: GCP GKE Console
+      icon: cloud
+    - url: https://github.com/your-org/RND-NX/tree/main/infra/gcp/envs/prod
+      title: Terraform Configuration
+      icon: github
+spec:
+  type: kubernetes-cluster
+  lifecycle: production
+  owner: devops-team
+  system: rnd-nx-framework
+  dependsOn:
+    - resource:default/gcp-vpc-prod
+

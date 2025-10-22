@@ -1,0 +1,23 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: local-docker-env
+  description: 로컬 개발 환경 Docker Compose 스택 (PostgreSQL, Services)
+  tags:
+    - docker
+    - local-development
+    - postgresql
+    - development
+  links:
+    - url: https://github.com/your-org/RND-NX/tree/main/infra/local/docker
+      title: Docker Compose Files
+      icon: github
+    - url: https://github.com/your-org/RND-NX/blob/main/infra/local/README.md
+      title: Setup Guide
+      icon: docs
+spec:
+  type: development-environment
+  lifecycle: experimental
+  owner: platform-team
+  system: rnd-nx-framework
+

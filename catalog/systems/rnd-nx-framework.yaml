@@ -10,10 +10,10 @@ metadata:
     - enterprise
     - framework
   annotations:
-    github.com/project-slug: vntg/RND-NX
-    backstage.io/techdocs-ref: url:https://github.com/vntg/RND-NX
+    # github.com/project-slug: VntgCorp/RND-NX
+    backstage.io/techdocs-ref: dir:.
   links:
-    - url: https://github.com/vntg/RND-NX
+    - url: https://github.com/VntgCorp/RND-NX
       title: GitHub Repository
       icon: github
     - url: https://nx.dev

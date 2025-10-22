@@ -1,0 +1,27 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: be-users-library
+  description: NestJS 사용자 관리 라이브러리
+  tags:
+    - nestjs
+    - user-management
+    - backend
+    - library
+  annotations:
+    nx.dev/project: '@rnd-nx/be-users'
+    backstage.io/source-location: url:https://github.com/VntgCrop/RND-NX/tree/develop/libs/be/users
+  links:
+    - url: https://github.com/VntgCrop/RND-NX/tree/develop/libs/be/users
+      title: Source Code
+      icon: github
+spec:
+  type: library
+  lifecycle: production
+  owner: backend-team
+  system: rnd-nx-framework
+  domain: backend-services
+  dependsOn:
+    - component:default/be-prisma-library
+    - component:default/be-common-library
+

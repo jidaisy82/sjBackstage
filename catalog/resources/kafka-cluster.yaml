@@ -1,0 +1,23 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-cluster
+  description: Apache Kafka 클러스터 - 이벤트 스트리밍 및 메시징
+  tags:
+    - kafka
+    - messaging
+    - event-streaming
+    - infrastructure
+  links:
+    - url: http://localhost:9092
+      title: Kafka Broker (Local)
+      icon: web
+    - url: https://github.com/your-org/RND-NX/tree/main/libs/be/log-pipeline/kafka
+      title: Kafka Configuration
+      icon: github
+spec:
+  type: message-broker
+  lifecycle: production
+  owner: backend-team
+  system: rnd-nx-framework
+

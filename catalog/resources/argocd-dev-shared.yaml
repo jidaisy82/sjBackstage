@@ -1,0 +1,27 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: argocd-dev-shared
+  description: ArgoCD Application - Dev 환경 공유 리소스 배포
+  tags:
+    - argocd
+    - kubernetes
+    - gitops
+    - dev
+  annotations:
+    argocd/app-name: dev-shared
+  links:
+    - url: https://argocd.your-domain.com/applications/dev-shared
+      title: ArgoCD Dashboard
+      icon: dashboard
+    - url: https://github.com/your-org/RND-NX/tree/main/k8s/argocd/apps/shared/dev.yaml
+      title: Application Definition
+      icon: github
+spec:
+  type: argocd-application
+  lifecycle: production
+  owner: devops-team
+  system: rnd-nx-framework
+  dependsOn:
+    - resource:default/gke-dev-cluster
+

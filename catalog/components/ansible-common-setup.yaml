@@ -1,0 +1,27 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ansible-common-setup
+  description: 서버 공통 설정을 위한 Ansible Role
+  tags:
+    - ansible
+    - configuration-management
+    - automation
+    - library
+  annotations:
+    ansible.io/role-path: libs/infra/ansible/roles/common-setup
+    backstage.io/source-location: url:https://github.com/VntgCorp/RND-NX/tree/develop/libs/infra/ansible/roles/common-setup
+  links:
+    - url: https://github.com/VntgCorp/RND-NX/tree/develop/libs/infra/ansible/roles/common-setup
+      title: Role Source
+      icon: github
+    - url: https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html
+      title: Ansible Roles Documentation
+      icon: docs
+spec:
+  type: library
+  lifecycle: production
+  owner: devops-team
+  system: rnd-nx-framework
+  domain: infrastructure
+
