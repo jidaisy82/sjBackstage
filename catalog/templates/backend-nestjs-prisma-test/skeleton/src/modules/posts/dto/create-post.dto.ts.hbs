@@ -1,0 +1,26 @@
+import { IsString, IsOptional, IsInt, IsEnum } from 'class-validator';
+
+export enum Status {
+  DRAFT = 'DRAFT',
+  PUBLISHED = 'PUBLISHED',
+}
+
+export class CreatePostDto {
+  @IsString()
+  title: string;
+
+  @IsOptional()
+  @IsString()
+  content?: string;
+
+  @IsInt()
+  authorId: number;
+
+  @IsOptional()
+  @IsInt()
+  categoryId?: number;
+
+  @IsOptional()
+  @IsEnum(Status)
+  status?: Status;
+}

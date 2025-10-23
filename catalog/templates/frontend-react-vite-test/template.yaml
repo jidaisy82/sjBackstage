@@ -1,0 +1,148 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: frontend-react-vite-test
+  title: Frontend React + Vite (test)
+  description: |
+    React + Vite 기반 프론트엔드 Template (Tech Blog 기반)
+    - PostgreSQL 데이터 조회 화면
+    - TailwindCSS + shadcn/ui
+    - Zustand 상태 관리
+    - Type-safe API 통신
+  tags:
+    - react
+    - vite
+    - frontend
+    - tailwindcss
+    - test
+    - typescript
+  links:
+    - url: https://github.com/VntgCorp/RND-NX/tree/develop/apps/tech-blog/user-client
+      title: 참조 프로젝트
+      icon: github
+      
+spec:
+  owner: group:platform-team
+  type: website
+  
+  parameters:
+    - title: 프로젝트 기본 정보
+      required:
+        - projectName
+        - description
+        - owner
+      properties:
+        projectName:
+          title: 프로젝트 이름
+          type: string
+          
+        description:
+          title: 프로젝트 설명
+          type: string
+          
+        owner:
+          title: 소유자
+          type: string
+          ui:field: OwnerPicker
+
+    - title: UI 설정
+      properties:
+        enableDarkMode:
+          title: 다크모드 지원
+          type: boolean
+          default: true
+          
+        uiLibrary:
+          title: UI 컴포넌트 라이브러리
+          type: string
+          enum:
+            - radix-ui
+            - mui
+            - ant-design
+          enumNames:
+            - Radix UI (shadcn/ui)
+            - Material UI
+            - Ant Design
+          default: radix-ui
+
+    - title: 상태 관리
+      properties:
+        stateManagement:
+          title: 상태 관리 라이브러리
+          type: string
+          enum:
+            - zustand
+            - redux
+            - context
+          enumNames:
+            - Zustand
+            - Redux Toolkit
+            - React Context
+          default: zustand
+
+    - title: API 연동
+      properties:
+        apiClient:
+          title: API 클라이언트
+          type: string
+          enum:
+            - nestia
+            - axios
+            - fetch
+          enumNames:
+            - Nestia (Type-safe)
+            - Axios
+            - Fetch API
+          default: nestia
+
+    - title: 저장소 위치
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+  
+  steps:
+    - id: fetch-base
+      name: Fetch Frontend Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          projectName: ${{ parameters.projectName }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          enableDarkMode: ${{ parameters.enableDarkMode }}
+          uiLibrary: ${{ parameters.uiLibrary }}
+          stateManagement: ${{ parameters.stateManagement }}
+          apiClient: ${{ parameters.apiClient }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        description: ${{ parameters.description }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: develop
+        protectDefaultBranch: false
+        repoVisibility: private
+
+    - id: register-catalog
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Frontend Component
+        icon: catalog
+        entityRef: ${{ steps['register-catalog'].output.entityRef }}
+      - title: Frontend Application
+        url: http://localhost:5173
+        icon: web

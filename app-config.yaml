@@ -315,7 +315,29 @@ catalog:
     - type: file
       target: ../../examples/entities.yaml
     
-    # 템플릿
+    # ===== Software Templates =====
+    
+    # Tech Blog 기반 Templates (Test)
+    - type: file
+      target: ../../catalog/templates/backend-nestjs-prisma-test/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: ../../catalog/templates/frontend-react-vite-test/template.yaml
+      rules:
+        - allow: [Template]
+    
+    # 일반 기술 스택 Templates
+    - type: file
+      target: ../../catalog/templates/backend-spring-boot/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: ../../catalog/templates/frontend-vue/template.yaml
+      rules:
+        - allow: [Template]
+    
+    # 기본 예시 템플릿
     - type: file
       target: ../../examples/template/template.yaml
       rules:

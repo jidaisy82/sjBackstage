@@ -1,0 +1,33 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: {{ values.projectName }}-vue
+  description: |
+    {{ values.description }} - Vue Frontend
+    - Vue {{ values.vueVersion }}
+    - {{ values.buildTool }} Build Tool
+    {{#if values.uiFramework}}
+    - {{ values.uiFramework }} UI Framework
+    {{/if}}
+    {{#if values.stateManagement}}
+    - {{ values.stateManagement }} State Management
+    {{/if}}
+  tags:
+    - vue
+    - frontend
+    - javascript
+    {{#if (eq values.buildTool "vite")}}
+    - vite
+    {{/if}}
+    {{#if (eq values.buildTool "webpack")}}
+    - webpack
+    {{/if}}
+  annotations:
+    github.com/project-slug: {{ parameters.repoUrl | parseRepoUrl }}
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: website
+  lifecycle: production
+  owner: {{ values.owner }}
+  system: {{ values.projectName }}-system

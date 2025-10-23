@@ -1,0 +1,22 @@
+import React from 'react';
+
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+export function Layout({ children }: LayoutProps) {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <nav className="bg-white dark:bg-gray-800 shadow">
+        <div className="container mx-auto px-4 py-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {{ values.projectName }}
+          </h1>
+        </div>
+      </nav>
+      <main className="container mx-auto px-4 py-8">
+        {children}
+      </main>
+    </div>
+  );
+}

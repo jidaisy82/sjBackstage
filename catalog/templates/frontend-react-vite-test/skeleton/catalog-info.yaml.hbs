@@ -1,0 +1,30 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: {{ values.projectName }}-user-client
+  description: |
+    {{ values.description }} - Frontend Client
+    - React + Vite
+    - TailwindCSS
+    - PostgreSQL Data Display
+    {{#if values.enableDarkMode}}
+    - Dark Mode Support
+    {{/if}}
+  tags:
+    - react
+    - vite
+    - frontend
+    - tailwindcss
+    - typescript
+    - test
+  annotations:
+    github.com/project-slug: {{ parameters.repoUrl | parseRepoUrl }}
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: website
+  lifecycle: production
+  owner: {{ values.owner }}
+  system: {{ values.projectName }}-system
+  consumesApis:
+    - {{ values.projectName }}-rest-api

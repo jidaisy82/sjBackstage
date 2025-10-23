@@ -1,0 +1,146 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: frontend-vue
+  title: Frontend Vue
+  description: |
+    Vue.js 기반 프론트엔드 Template
+    - Vue {{ values.vueVersion }}
+    - {{ values.buildTool }} 빌드 도구
+    - {{ values.uiFramework }} UI 프레임워크
+    - {{ values.stateManagement }} 상태 관리
+  tags:
+    - vue
+    - frontend
+    - javascript
+    - vite
+  links:
+    - url: https://vuejs.org/
+      title: Vue Documentation
+      icon: docs
+      
+spec:
+  owner: group:platform-team
+  type: website
+  
+  parameters:
+    - title: 프로젝트 기본 정보
+      required:
+        - projectName
+        - description
+        - owner
+      properties:
+        projectName:
+          title: 프로젝트 이름
+          type: string
+          
+        description:
+          title: 프로젝트 설명
+          type: string
+          
+        owner:
+          title: 소유자
+          type: string
+          ui:field: OwnerPicker
+
+    - title: Vue 설정
+      properties:
+        vueVersion:
+          title: Vue 버전
+          type: string
+          enum:
+            - "3.x"
+            - "2.x"
+          default: "3.x"
+          
+        buildTool:
+          title: 빌드 도구
+          type: string
+          enum:
+            - vite
+            - webpack
+          default: vite
+
+    - title: UI 프레임워크
+      properties:
+        uiFramework:
+          title: UI 프레임워크
+          type: string
+          enum:
+            - vuetify
+            - quasar
+            - element-plus
+            - ant-design-vue
+          enumNames:
+            - Vuetify
+            - Quasar
+            - Element Plus
+            - Ant Design Vue
+          default: vuetify
+
+    - title: 상태 관리
+      properties:
+        stateManagement:
+          title: 상태 관리
+          type: string
+          enum:
+            - pinia
+            - vuex
+            - none
+          enumNames:
+            - Pinia
+            - Vuex
+            - 없음
+          default: pinia
+
+    - title: 저장소 위치
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+  
+  steps:
+    - id: fetch-base
+      name: Fetch Vue Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          projectName: ${{ parameters.projectName }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          vueVersion: ${{ parameters.vueVersion }}
+          buildTool: ${{ parameters.buildTool }}
+          uiFramework: ${{ parameters.uiFramework }}
+          stateManagement: ${{ parameters.stateManagement }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        description: ${{ parameters.description }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: develop
+        protectDefaultBranch: false
+        repoVisibility: private
+
+    - id: register-catalog
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Frontend Component
+        icon: catalog
+        entityRef: ${{ steps['register-catalog'].output.entityRef }}
+      - title: Frontend Application
+        url: http://localhost:3000
+        icon: web

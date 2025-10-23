@@ -1,0 +1,46 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: {{ values.projectName }}
+  {{#if values.enableJPA}}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  {{/if}}
+  {{#if values.databaseType}}
+  {{#if (eq values.databaseType "postgresql")}}
+  datasource:
+    url: jdbc:postgresql://localhost:5432/{{ values.projectName }}
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+  {{/if}}
+  {{#if (eq values.databaseType "mysql")}}
+  datasource:
+    url: jdbc:mysql://localhost:3306/{{ values.projectName }}
+    username: root
+    password: password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  {{/if}}
+  {{#if (eq values.databaseType "h2")}}
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  {{/if}}
+  {{/if}}
+
+logging:
+  level:
+    com.{{ values.projectName }}: DEBUG

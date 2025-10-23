@@ -1,0 +1,131 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: backend-nestjs-prisma-test
+  title: Backend NestJS + Prisma (test)
+  description: |
+    NestJS + Prisma 기반 백엔드 Template (Tech Blog 기반)
+    - PostgreSQL 기존 DB 연동
+    - JWT 인증
+    - Type-safe API (Nestia)
+    - 기본 CRUD 기능
+  tags:
+    - nestjs
+    - prisma
+    - postgresql
+    - test
+    - backend
+    - typescript
+  links:
+    - url: https://github.com/VntgCorp/RND-NX/tree/develop/apps/tech-blog/api-server
+      title: 참조 프로젝트
+      icon: github
+      
+spec:
+  owner: group:platform-team
+  type: service
+  
+  parameters:
+    - title: 프로젝트 기본 정보
+      required:
+        - projectName
+        - description
+        - owner
+      properties:
+        projectName:
+          title: 프로젝트 이름
+          type: string
+          description: 프로젝트 식별자
+          pattern: '^[a-z][a-z0-9-]*$'
+          
+        description:
+          title: 프로젝트 설명
+          type: string
+          
+        owner:
+          title: 소유자
+          type: string
+          ui:field: OwnerPicker
+
+    - title: 데이터베이스 설정
+      properties:
+        databaseUrl:
+          title: PostgreSQL 연결 URL
+          type: string
+          description: 기존 PostgreSQL 데이터베이스 연결 문자열
+          default: postgresql://username:password@localhost:5432/existing_db
+          ui:field: Secret
+
+    - title: 인증 설정
+      properties:
+        enableJWT:
+          title: JWT 인증 활성화
+          type: boolean
+          default: true
+          
+        enableBcrypt:
+          title: 비밀번호 해싱 (bcrypt)
+          type: boolean
+          default: true
+
+    - title: 저장소 위치
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+  
+  steps:
+    - id: fetch-base
+      name: Fetch Backend Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          projectName: ${{ parameters.projectName }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          databaseUrl: ${{ parameters.databaseUrl }}
+          enableJWT: ${{ parameters.enableJWT }}
+          enableBcrypt: ${{ parameters.enableBcrypt }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        description: ${{ parameters.description }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: develop
+        protectDefaultBranch: false
+        repoVisibility: private
+
+    - id: register-catalog
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+    - id: setup-env
+      name: Setup Environment Variables
+      action: fs:write
+      input:
+        path: .env
+        content: |
+          DATABASE_URL="${{ parameters.databaseUrl }}"
+          JWT_SECRET="your-jwt-secret-key-change-this"
+          NODE_ENV="local"
+          PORT=3000
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Backend Component
+        icon: catalog
+        entityRef: ${{ steps['register-catalog'].output.entityRef }}
+      - title: API Documentation
+        url: http://localhost:3000/api/swagger
+        icon: docs

@@ -1,0 +1,25 @@
+<template>
+  <div class="home">
+    <h1>Welcome to {{ values.projectName }}</h1>
+    <p>This is a Vue.js application created with {{ values.buildTool }}.</p>
+    {{#if values.uiFramework}}
+    <p>UI Framework: {{ values.uiFramework }}</p>
+    {{/if}}
+    {{#if values.stateManagement}}
+    <p>State Management: {{ values.stateManagement }}</p>
+    {{/if}}
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'HomeView'
+}
+</script>
+
+<style scoped>
+.home {
+  text-align: center;
+  padding: 2rem;
+}
+</style>

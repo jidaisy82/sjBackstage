@@ -1,0 +1,147 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: backend-spring-boot
+  title: Backend Spring Boot
+  description: |
+    Spring Boot 기반 백엔드 Template
+    - Spring Boot {{ values.springVersion }}
+    - Java {{ values.javaVersion }}
+    - JPA + {{ values.databaseType }}
+    - Spring Security
+  tags:
+    - spring-boot
+    - java
+    - backend
+    - jpa
+    - security
+  links:
+    - url: https://spring.io/projects/spring-boot
+      title: Spring Boot Documentation
+      icon: docs
+      
+spec:
+  owner: group:platform-team
+  type: service
+  
+  parameters:
+    - title: 프로젝트 기본 정보
+      required:
+        - projectName
+        - description
+        - owner
+      properties:
+        projectName:
+          title: 프로젝트 이름
+          type: string
+          
+        description:
+          title: 프로젝트 설명
+          type: string
+          
+        owner:
+          title: 소유자
+          type: string
+          ui:field: OwnerPicker
+
+    - title: Spring Boot 설정
+      properties:
+        springVersion:
+          title: Spring Boot 버전
+          type: string
+          enum:
+            - "3.2.x"
+            - "3.1.x"
+            - "2.7.x"
+          default: "3.2.x"
+          
+        javaVersion:
+          title: Java 버전
+          type: string
+          enum:
+            - "17"
+            - "11"
+            - "8"
+          default: "17"
+
+    - title: 데이터베이스 설정
+      properties:
+        databaseType:
+          title: 데이터베이스 타입
+          type: string
+          enum:
+            - postgresql
+            - mysql
+            - h2
+          default: postgresql
+          
+        enableJPA:
+          title: JPA 활성화
+          type: boolean
+          default: true
+
+    - title: 보안 설정
+      properties:
+        enableSecurity:
+          title: Spring Security 활성화
+          type: boolean
+          default: true
+          
+        enableOAuth2:
+          title: OAuth2 활성화
+          type: boolean
+          default: false
+
+    - title: 저장소 위치
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+  
+  steps:
+    - id: fetch-base
+      name: Fetch Spring Boot Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          projectName: ${{ parameters.projectName }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          springVersion: ${{ parameters.springVersion }}
+          javaVersion: ${{ parameters.javaVersion }}
+          databaseType: ${{ parameters.databaseType }}
+          enableJPA: ${{ parameters.enableJPA }}
+          enableSecurity: ${{ parameters.enableSecurity }}
+          enableOAuth2: ${{ parameters.enableOAuth2 }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        description: ${{ parameters.description }}
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: develop
+        protectDefaultBranch: false
+        repoVisibility: private
+
+    - id: register-catalog
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Backend Component
+        icon: catalog
+        entityRef: ${{ steps['register-catalog'].output.entityRef }}
+      - title: API Documentation
+        url: http://localhost:8080/swagger-ui.html
+        icon: docs

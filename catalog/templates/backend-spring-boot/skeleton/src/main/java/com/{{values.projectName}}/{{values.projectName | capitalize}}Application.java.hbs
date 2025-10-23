@@ -1,0 +1,13 @@
+package com.{{ values.projectName }};
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class {{ values.projectName | capitalize }}Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run({{ values.projectName | capitalize }}Application.class, args);
+    }
+
+}

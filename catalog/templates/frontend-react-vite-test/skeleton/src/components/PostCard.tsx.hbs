@@ -1,0 +1,47 @@
+import React from 'react';
+
+interface Post {
+  id: number;
+  title: string;
+  content?: string;
+  author: {
+    id: number;
+    email: string;
+  };
+  category?: {
+    id: number;
+    name: string;
+  };
+  status: 'DRAFT' | 'PUBLISHED';
+  createdAt: string;
+}
+
+interface PostCardProps {
+  post: Post;
+}
+
+export function PostCard({ post }: PostCardProps) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+      <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+        {post.title}
+      </h2>
+      {post.content && (
+        <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+          {post.content}
+        </p>
+      )}
+      <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+        <span>By {post.author.email}</span>
+        <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+      </div>
+      {post.category && (
+        <div className="mt-2">
+          <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-2 py-1 rounded">
+            {post.category.name}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
