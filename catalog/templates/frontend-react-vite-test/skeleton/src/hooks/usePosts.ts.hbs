@@ -1,32 +1,23 @@
 import { useState, useEffect } from 'react';
 
-interface Post {
+interface Category {
   id: number;
-  title: string;
-  content?: string;
-  author: {
-    id: number;
-    email: string;
-  };
-  category?: {
-    id: number;
-    name: string;
-  };
-  status: 'DRAFT' | 'PUBLISHED';
+  name: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export function usePosts() {
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/posts');
+      const response = await fetch('http://localhost:3000/api/categories');
       if (response.ok) {
-        const data = await response.json();
-        setPosts(data);
+        const apiResponse = await response.json();
+        setPosts(apiResponse.data);
       }
     } catch (error) {
       console.error('Failed to fetch posts:', error);
