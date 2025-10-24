@@ -149,6 +149,23 @@ auth:
 
 scaffolder:
   # see https://backstage.io/docs/features/software-templates/configuration for software template options
+  defaultRepositories:
+    - host: github.com
+      owner: VntgCorp
+      repo: RND-NX
+  
+  # 개발자별 개별 저장소 허용 (확장 가능)
+  allowedRepositories:
+    - host: github.com
+      owner: jidaisy82
+    - host: github.com  
+      owner: seojiwon
+    # 새로운 개발자 추가 시 여기에 추가
+    # - host: github.com
+    #   owner: newdeveloper
+    # 모든 계정 허용 (위험)
+    # - host: github.com
+    #   owner: "*""
 
 catalog:
   import:

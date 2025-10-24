@@ -2,32 +2,23 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: {{ values.projectName }}-vue
-  description: |
-    {{ values.description }} - Vue Frontend
-    - Vue {{ values.vueVersion }}
-    - {{ values.buildTool }} Build Tool
-    {{#if values.uiFramework}}
-    - {{ values.uiFramework }} UI Framework
-    {{/if}}
-    {{#if values.stateManagement}}
-    - {{ values.stateManagement }} State Management
-    {{/if}}
+  name: ${{ values.projectSlug }}-vue
+  description: "${{ values.description }} - Vue Frontend - Vue ${{ values.vueVersion }} - ${{ values.buildTool }} Build Tool{% if values.uiFramework %} - ${{ values.uiFramework }} UI Framework{% endif %}{% if values.stateManagement %} - ${{ values.stateManagement }} State Management{% endif %}"
   tags:
     - vue
     - frontend
     - javascript
-    {{#if (eq values.buildTool "vite")}}
+{% if values.buildTool == "vite" %}
     - vite
-    {{/if}}
-    {{#if (eq values.buildTool "webpack")}}
+{% endif %}
+{% if values.buildTool == "webpack" %}
     - webpack
-    {{/if}}
+{% endif %}
   annotations:
-    github.com/project-slug: {{ parameters.repoUrl | parseRepoUrl }}
+    github.com/project-slug: ${{ values.repoUrl | parseRepoUrl | pick('owner') }}/${{ values.repoUrl | parseRepoUrl | pick('repo') }}
     backstage.io/techdocs-ref: dir:.
 spec:
   type: website
   lifecycle: production
-  owner: {{ values.owner }}
-  system: {{ values.projectName }}-system
+  owner: "${{ values.owner }}"
+  system: ${{ values.projectSlug }}-system

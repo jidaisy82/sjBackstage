@@ -2,9 +2,9 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: {{ values.projectName }}-api-server
+  name: ${{ values.projectSlug }}-api-server
   description: |
-    {{ values.description }} - Backend API Server
+    ${{ values.description }} - Backend API Server
     - NestJS Framework
     - PostgreSQL + Prisma ORM
     - JWT Authentication
@@ -17,7 +17,7 @@ metadata:
     - typescript
     - test
   annotations:
-    github.com/project-slug: {{ parameters.repoUrl | parseRepoUrl }}
+    github.com/project-slug: ${{ values.repoUrl | parseRepoUrl | pick('owner') }}/${{ values.repoUrl | parseRepoUrl | pick('repo') }}
     backstage.io/techdocs-ref: dir:.
   links:
     - url: http://localhost:3000/api/swagger
@@ -26,9 +26,9 @@ metadata:
 spec:
   type: service
   lifecycle: production
-  owner: {{ values.owner }}
-  system: {{ values.projectName }}-system
+  owner: "${{ values.owner }}"
+  system: ${{ values.projectSlug }}-system
   providesApis:
-    - {{ values.projectName }}-rest-api
+    - ${{ values.projectSlug }}-rest-api
   dependsOn:
-    - resource:{{ values.projectName }}-database
+    - resource:${{ values.projectSlug }}-database

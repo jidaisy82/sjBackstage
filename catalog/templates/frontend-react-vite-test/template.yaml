@@ -102,18 +102,24 @@ spec:
         repoUrl:
           title: Repository Location
           type: string
+          description: "저장소 위치를 선택하세요."
           ui:field: RepoUrlPicker
-  
+          ui:options:
+            allowedHosts:
+              - github.com
   steps:
     - id: fetch-base
       name: Fetch Frontend Template
       action: fetch:template
       input:
         url: ./skeleton
+        templateFileExtension: hbs
         values:
           projectName: ${{ parameters.projectName }}
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
+          repoUrl: ${{ parameters.repoUrl }}
+          projectSlug: ${{ parameters.projectName | lower | replace(' ', '-', true) | replace('_', '-', true) }}
           enableDarkMode: ${{ parameters.enableDarkMode }}
           uiLibrary: ${{ parameters.uiLibrary }}
           stateManagement: ${{ parameters.stateManagement }}

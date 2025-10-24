@@ -2,34 +2,25 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: {{ values.projectName }}-spring-boot
-  description: |
-    {{ values.description }} - Spring Boot Backend
-    - Spring Boot {{ values.springVersion }}
-    - Java {{ values.javaVersion }}
-    {{#if values.enableJPA}}
-    - JPA + {{ values.databaseType }}
-    {{/if}}
-    {{#if values.enableSecurity}}
-    - Spring Security
-    {{/if}}
+  name: ${{ values.projectSlug }}-spring-boot
+  description: "${{ values.description }} - Spring Boot Backend - Spring Boot ${{ values.springVersion }} - Java ${{ values.javaVersion }}{% if values.enableJPA %} - JPA + ${{ values.databaseType }}{% endif %}{% if values.enableSecurity %} - Spring Security{% endif %}"
   tags:
     - spring-boot
     - java
     - backend
-    {{#if values.enableJPA}}
+{% if values.enableJPA %}
     - jpa
-    {{/if}}
-    {{#if values.enableSecurity}}
+{% endif %}
+{% if values.enableSecurity %}
     - security
-    {{/if}}
+{% endif %}
   annotations:
-    github.com/project-slug: {{ parameters.repoUrl | parseRepoUrl }}
+    github.com/project-slug: ${{ values.repoUrl | parseRepoUrl | pick('owner') }}/${{ values.repoUrl | parseRepoUrl | pick('repo') }}
     backstage.io/techdocs-ref: dir:.
 spec:
   type: service
   lifecycle: production
-  owner: {{ values.owner }}
-  system: {{ values.projectName }}-system
+  owner: "${{ values.owner }}"
+  system: ${{ values.projectSlug }}-system
   providesApis:
-    - {{ values.projectName }}-rest-api
+    - ${{ values.projectSlug }}-rest-api

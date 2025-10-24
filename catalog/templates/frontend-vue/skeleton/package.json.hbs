@@ -10,26 +10,14 @@
   },
   "dependencies": {
     "vue": "^3.4.0",
-    "vue-router": "^4.2.0"
-    {{#if (eq values.uiFramework "vuetify")}}
-    ,"vuetify": "^3.5.0"
-    ,"@mdi/font": "^7.4.0"
-    {{/if}}
-    {{#if (eq values.uiFramework "quasar")}}
-    ,"quasar": "^2.15.0"
-    {{/if}}
-    {{#if (eq values.uiFramework "element-plus")}}
-    ,"element-plus": "^2.4.0"
-    {{/if}}
-    {{#if (eq values.uiFramework "ant-design-vue")}}
-    ,"ant-design-vue": "^4.0.0"
-    {{/if}}
-    {{#if (eq values.stateManagement "pinia")}}
-    ,"pinia": "^2.1.0"
-    {{/if}}
-    {{#if (eq values.stateManagement "vuex")}}
-    ,"vuex": "^4.1.0"
-    {{/if}}
+    "vue-router": "^4.2.0"{{#if (eq values.uiFramework "vuetify")}},
+    "vuetify": "^3.5.0",
+    "@mdi/font": "^7.4.0"{{/if}}{{#if (eq values.uiFramework "quasar")}},
+    "quasar": "^2.15.0"{{/if}}{{#if (eq values.uiFramework "element-plus")}},
+    "element-plus": "^2.4.0"{{/if}}{{#if (eq values.uiFramework "ant-design-vue")}},
+    "ant-design-vue": "^4.0.0"{{/if}}{{#if (eq values.stateManagement "pinia")}},
+    "pinia": "^2.1.0"{{/if}}{{#if (eq values.stateManagement "vuex")}},
+    "vuex": "^4.1.0"{{/if}}
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",
