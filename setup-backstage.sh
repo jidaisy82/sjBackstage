@@ -12,20 +12,6 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# OS 감지
-detect_os() {
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "macos"
-    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        echo "linux"
-    else
-        echo "unknown"
-    fi
-}
-
-OS_TYPE=$(detect_os)
-print_info "운영체제: $OS_TYPE"
-
 # 함수: 메시지 출력
 print_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -47,12 +33,15 @@ print_error() {
 ask_yes_no() {
     local prompt="$1"
     local default="$2"
+    local prompt_text
     
     if [ "$default" = "Y" ]; then
-        read -p "$(echo -e ${BLUE}$prompt (Y/n): ${NC})" response
+        printf "${BLUE}%s (Y/n): ${NC}" "$prompt"
+        read response
         response=${response:-Y}
     else
-        read -p "$(echo -e ${BLUE}$prompt (y/N): ${NC})" response
+        printf "${BLUE}%s (y/N): ${NC}" "$prompt"
+        read response
         response=${response:-N}
     fi
     
@@ -69,7 +58,8 @@ ask_input() {
     local var_name="$2"
     
     while [ -z "${!var_name}" ]; do
-        read -p "$(echo -e ${BLUE}$prompt: ${NC})" input
+        printf "${BLUE}%s: ${NC}" "$prompt"
+        read input
         if [ -n "$input" ]; then
             eval "$var_name='$input'"
         else
@@ -77,6 +67,21 @@ ask_input() {
         fi
     done
 }
+
+# OS 감지
+detect_os() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macos"
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "linux"
+    else
+        echo "unknown"
+    fi
+}
+
+# OS 자동 감지
+OS_TYPE=$(detect_os)
+print_info "운영체제: $OS_TYPE"
 
 # 시작 메시지
 echo ""
@@ -181,31 +186,77 @@ print_info "현재 디렉토리: $CURRENT_DIR"
 
 # rnd-backstage 프로젝트인지 확인
 IS_BACKSTAGE_PROJECT=false
-if [ -f "app-config.yaml" ] && [ -f "package.json" ]; then
+if [ -f "app-config.yaml" ] && [ -f "package.json" ] && [ -d "packages" ]; then
     IS_BACKSTAGE_PROJECT=true
     print_success "rnd-backstage 프로젝트 확인됨"
+    BACKSTAGE_SOURCE_DIR=$CURRENT_DIR
     WORK_DIR=$CURRENT_DIR
 else
+    # 현재 위치가 rnd-backstage가 아닌 경우
     print_warning "현재 디렉토리는 rnd-backstage 프로젝트가 아닙니다."
-    print_info "옵션:"
-    print_info "1. 현재 디렉토리에 Backstage 설치"
-    print_info "2. 새 디렉토리 생성"
+    print_info ""
+    print_info "이 스크립트는 기존 rnd-backstage 프로젝트를 Docker로 컨테이너화합니다."
+    print_info ""
+    print_info "옵션 1: 기존 rnd-backstage를 현재 위치로 복사"
+    print_info "옵션 2: 기존 rnd-backstage를 다른 위치로 복사"
+    print_info "옵션 3: 처음부터 Backstage 생성 (npx 명령어 사용 권장)"
+    print_info ""
     
-    if ask_yes_no "현재 디렉토리를 사용하시겠습니까?" "N"; then
-        WORK_DIR=$CURRENT_DIR
-    else
-        ask_input "Backstage를 설치할 디렉토리 경로를 입력하세요: " "WORK_DIR"
+    if ask_yes_no "기존 rnd-backstage 폴더 경로를 지정하여 복사하시겠습니까?" "N"; then
+        ask_input "rnd-backstage 프로젝트의 전체 경로를 입력하세요: " "BACKSTAGE_PATH"
         
-        # 디렉토리 생성
-        if [ ! -d "$WORK_DIR" ]; then
-            if ask_yes_no "디렉토리를 생성하시겠습니까?" "Y"; then
-                mkdir -p "$WORK_DIR"
-                print_success "디렉토리 생성 완료: $WORK_DIR"
-            else
-                print_error "디렉토리가 존재하지 않습니다."
-                exit 1
-            fi
+        if [ ! -d "$BACKSTAGE_PATH" ]; then
+            print_error "경로가 존재하지 않습니다: $BACKSTAGE_PATH"
+            exit 1
         fi
+        
+        if [ ! -f "$BACKSTAGE_PATH/app-config.yaml" ] || [ ! -f "$BACKSTAGE_PATH/package.json" ] || [ ! -d "$BACKSTAGE_PATH/packages" ]; then
+            print_error "rnd-backstage 프로젝트가 아닙니다: $BACKSTAGE_PATH"
+            exit 1
+        fi
+        
+        BACKSTAGE_SOURCE_DIR="$BACKSTAGE_PATH"
+        print_success "rnd-backstage 프로젝트 확인됨: $BACKSTAGE_PATH"
+        
+        # 새 폴더로 복사할지 확인
+        if ask_yes_no "현재 디렉토리에 rnd-backstage를 복사하여 설치하시겠습니까?" "Y"; then
+            WORK_DIR=$CURRENT_DIR
+            print_info "rnd-backstage 프로젝트를 현재 디렉토리로 복사 중..."
+            
+            # 숨김 파일 포함 복사 (.gitignore, .env 등)
+            rsync -av --exclude='.git' --exclude='node_modules' --exclude='dist' --exclude='*.log' "$BACKSTAGE_SOURCE_DIR/" "$WORK_DIR/"
+            
+            print_success "복사 완료: $WORK_DIR"
+        else
+            ask_input "Backstage를 설치할 디렉토리 경로를 입력하세요: " "WORK_DIR"
+            
+            if [ ! -d "$WORK_DIR" ]; then
+                if ask_yes_no "디렉토리를 생성하시겠습니까?" "Y"; then
+                    mkdir -p "$WORK_DIR"
+                else
+                    print_error "디렉토리가 존재하지 않습니다."
+                    exit 1
+                fi
+            fi
+            
+            print_info "rnd-backstage 프로젝트를 $WORK_DIR로 복사 중..."
+            rsync -av --exclude='.git' --exclude='node_modules' --exclude='dist' --exclude='*.log' "$BACKSTAGE_SOURCE_DIR/" "$WORK_DIR/"
+            print_success "복사 완료: $WORK_DIR"
+        fi
+    else
+        print_info ""
+        print_info "⚠️  새로운 Backstage를 처음부터 생성하려면:"
+        print_info ""
+        print_info "방법 1: npx로 Backstage 생성 (권장)"
+        print_info "  npx @backstage/create-app"
+        print_info ""
+        print_info "방법 2: 기존 rnd-backstage 사용"
+        print_info "  1. rnd-backstage 폴더로 이동:"
+        print_info "     cd /Users/seojiwon/VNTG_PROJECT/rnd-backstage"
+        print_info "  2. 스크립트 실행:"
+        print_info "     ./setup-backstage.sh"
+        print_info ""
+        exit 0
     fi
 fi
 
