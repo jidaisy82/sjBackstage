@@ -118,29 +118,9 @@ fi
 
 cd "$INSTALL_DIR"
 
-# Step 2: app-config.yaml 참고 파일 확인
-print_info "app-config.yaml 참고 파일 확인 중..."
-print_info ""
-print_info "⚠️  참고할 app-config.yaml 파일을 찾습니다."
-print_info "   스크립트 위치에서 app-config.yaml 파일을 찾습니다."
-print_info ""
-
+# Step 2: 스크립트 디렉토리 설정
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-if [ -f "$SCRIPT_DIR/app-config.yaml" ]; then
-    APP_CONFIG_REF="$SCRIPT_DIR/app-config.yaml"
-    print_success "app-config.yaml 파일 발견: $APP_CONFIG_REF"
-else
-    print_warning "스크립트 위치에 app-config.yaml이 없습니다."
-    print_info "rnd-backstage 폴더의 app-config.yaml 경로를 입력하세요:"
-    
-    ask_input "app-config.yaml 파일의 전체 경로를 입력하세요: " "APP_CONFIG_REF"
-    
-    if [ ! -f "$APP_CONFIG_REF" ]; then
-        print_error "파일이 존재하지 않습니다: $APP_CONFIG_REF"
-        exit 1
-    fi
-fi
+print_info "스크립트 위치: $SCRIPT_DIR"
 
 # Step 3: Docker 확인
 print_info "Docker 확인 중..."
@@ -215,7 +195,8 @@ BACKEND_SECRET=$(openssl rand -base64 32)
 EXTERNAL_SECRET=$(openssl rand -base64 32)
 
 if [ "$USE_CONTAINER_DB" = true ]; then
-    POSTGRES_PASSWORD=$(openssl rand -base64 32)
+    #POSTGRES_PASSWORD=$(openssl rand -base64 32)
+    POSTGRES_PASSWORD="post1234"
     POSTGRES_HOST="postgres"
     POSTGRES_PORT="5432"
     POSTGRES_USER="postgres"
@@ -240,33 +221,86 @@ ask_input "GitHub OAuth Client Secret을 입력하세요: " "AUTH_GITHUB_CLIENT_
 # Step 7: app-config.yaml 통합
 print_info "app-config.yaml 통합 중..."
 
-# 기존 app-config.yaml 백업
+# 백스테이지 설치 시 생성된 app-config.yaml을 그대로 사용
 if [ -f "$BACKSTAGE_DIR/app-config.yaml" ]; then
-    cp "$BACKSTAGE_DIR/app-config.yaml" "$BACKSTAGE_DIR/app-config.yaml.backup"
-    print_info "기존 app-config.yaml 백업 완료"
+    print_info "백스테이지 생성 app-config.yaml을 사용합니다."
+    print_info "파일 위치: $BACKSTAGE_DIR/app-config.yaml"
+else
+    print_warning "백스테이지 설치된 app-config.yaml을 찾을 수 없습니다."
 fi
 
-# 참고 app-config.yaml 복사
-cp "$APP_CONFIG_REF" "$BACKSTAGE_DIR/app-config.yaml"
-print_info "app-config.yaml 복사 완료: $APP_CONFIG_REF → $BACKSTAGE_DIR/app-config.yaml"
+# rnd-backstage 폴더에서 참고용 app-config.yaml을 app-config-example.yaml로 복사
+# (스크립트가 어디서 실행되든 rnd-backstage 폴더의 파일을 사용)
+REF_APP_CONFIG=""
+if [ -f "$SCRIPT_DIR/app-config.yaml" ]; then
+    REF_APP_CONFIG="$SCRIPT_DIR/app-config.yaml"
+    print_info "rnd-backstage 폴더에서 app-config.yaml 발견: $REF_APP_CONFIG"
+else
+    print_warning "참고용 app-config.yaml 파일을 찾을 수 없습니다."
+    print_warning "  - 확인 위치: $SCRIPT_DIR/app-config.yaml"
+fi
 
-# examples 폴더 확인 및 복사
-if [ -d "$(dirname "$APP_CONFIG_REF")/examples" ]; then
-    print_info "examples 폴더 복사 중..."
-    cp -r "$(dirname "$APP_CONFIG_REF")/examples" "$BACKSTAGE_DIR/"
-    print_success "examples 폴더 복사 완료"
+if [ -n "$REF_APP_CONFIG" ]; then
+    cp "$REF_APP_CONFIG" "$BACKSTAGE_DIR/app-config-example.yaml"
+    print_success "참고용 app-config-example.yaml 복사 완료"
+    print_info "참고: 필요시 app-config-example.yaml을 참고하여 app-config.yaml을 수정하세요."
+fi
+
+# examples 폴더 파일 처리
+print_info "examples 폴더 파일 처리 중..."
+
+# 백스테이지 설치 시 생성된 examples 파일들을 그대로 사용
+if [ -d "$BACKSTAGE_DIR/examples" ]; then
+    print_info "백스테이지 생성 examples 폴더를 사용합니다."
+    print_info "파일 위치: $BACKSTAGE_DIR/examples/"
     
-    print_info ""
-    print_info "⚠️  중요: app-config.yaml의 location 설정 확인"
-    print_info "   복사된 examples 폴더를 참조하도록 설정되어 있는지 확인하세요:"
-    print_info "   예: target: ../../examples/org.yaml"
-    print_info ""
+    # entities.yaml 확인
+    if [ -f "$BACKSTAGE_DIR/examples/entities.yaml" ]; then
+        print_info "entities.yaml 확인됨"
+    fi
+    
+    # org.yaml 확인
+    if [ -f "$BACKSTAGE_DIR/examples/org.yaml" ]; then
+        print_info "org.yaml 확인됨"
+    fi
+fi
+
+# rnd-backstage 폴더에서 참고용 examples 파일을 -example로 복사
+# (스크립트가 어디서 실행되든 rnd-backstage 폴더의 파일을 사용)
+# entities.yaml 처리
+REF_ENTITIES=""
+if [ -f "$SCRIPT_DIR/examples/entities.yaml" ]; then
+    REF_ENTITIES="$SCRIPT_DIR/examples/entities.yaml"
+    print_info "rnd-backstage 폴더에서 entities.yaml 발견: $REF_ENTITIES"
+else
+    print_warning "참고용 entities.yaml 파일을 찾을 수 없습니다."
+    print_warning "  - 확인 위치: $SCRIPT_DIR/examples/entities.yaml"
+fi
+
+if [ -n "$REF_ENTITIES" ]; then
+    cp "$REF_ENTITIES" "$BACKSTAGE_DIR/entities-example.yaml"
+    print_success "참고용 entities-example.yaml 복사 완료"
+fi
+
+# org.yaml 처리
+REF_ORG=""
+if [ -f "$SCRIPT_DIR/examples/org.yaml" ]; then
+    REF_ORG="$SCRIPT_DIR/examples/org.yaml"
+    print_info "rnd-backstage 폴더에서 org.yaml 발견: $REF_ORG"
+else
+    print_warning "참고용 org.yaml 파일을 찾을 수 없습니다."
+    print_warning "  - 확인 위치: $SCRIPT_DIR/examples/org.yaml"
+fi
+
+if [ -n "$REF_ORG" ]; then
+    cp "$REF_ORG" "$BACKSTAGE_DIR/org-example.yaml"
+    print_success "참고용 org-example.yaml 복사 완료"
 fi
 
 print_info ""
 print_info "⚠️  중요: app-config.yaml 파일 수정"
 print_info ""
-print_info "현재 app-config.yaml이 이미 복사되어 있습니다."
+print_info "현재 백스테이지 생성 app-config.yaml이 사용됩니다."
 print_info ""
 print_info "필요시 수정 사항:"
 print_info "  - catalog의 location 항목 조정"
@@ -274,6 +308,33 @@ print_info "  - techinsights 관련 설정 제거"
 print_info "  - OAuth 설정 확인"
 print_info "  - examples 경로 확인"
 print_info ""
+
+# example 파일들이 존재하면 참고하라는 메시지 추가
+HAS_EXAMPLES=false
+if [ -f "$BACKSTAGE_DIR/app-config-example.yaml" ]; then
+    HAS_EXAMPLES=true
+fi
+if [ -f "$BACKSTAGE_DIR/org-example.yaml" ]; then
+    HAS_EXAMPLES=true
+fi
+if [ -f "$BACKSTAGE_DIR/entities-example.yaml" ]; then
+    HAS_EXAMPLES=true
+fi
+
+if [ "$HAS_EXAMPLES" = true ]; then
+    print_info "📝 참고 파일 (example 파일들을 참고하여 수정하세요):"
+    if [ -f "$BACKSTAGE_DIR/app-config-example.yaml" ]; then
+        print_info "  - app-config-example.yaml"
+    fi
+    if [ -f "$BACKSTAGE_DIR/org-example.yaml" ]; then
+        print_info "  - org-example.yaml"
+    fi
+    if [ -f "$BACKSTAGE_DIR/entities-example.yaml" ]; then
+        print_info "  - entities-example.yaml"
+    fi
+    print_info ""
+fi
+
 print_info "수정하지 않으면 현재 app-config.yaml이 그대로 적용이 되며, 컨테이너 빌드 시 적용됩니다."
 print_warning "수정 후 Enter를 누르면 다음 단계로 진행합니다..."
 print_info "(수정하지 않고 Enter만 눌러도 됩니다)"
