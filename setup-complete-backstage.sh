@@ -87,24 +87,23 @@ print_info "작업 디렉토리 확인 중..."
 CURRENT_DIR=$(pwd)
 print_info "현재 디렉토리: $CURRENT_DIR"
 print_info ""
-print_warning "📌 참고: Backstage가 생성될 폴더를 지정해주세요."
+print_warning "📌 참고: 설치 '기준 위치'를 지정하세요."
 print_warning ""
-print_warning "  현재 위치: $CURRENT_DIR"
+print_warning "  - 여기서 입력하는 경로(INSTALL_DIR)는 npx가 새 프로젝트 폴더(=프로젝트 이름)를 만들 '상위 경로'입니다."
+print_warning "  - @backstage/create-app 은 항상 새로운 폴더를 생성합니다. (기존 폴더에 바로 설치하지 않음)"
 print_warning ""
-print_warning "  옵션 1: 현재 위치에 바로 생성"
-print_warning "    입력: ."
-print_warning "    결과: $CURRENT_DIR/my-backstage/"
+print_warning "예시"
+print_warning "  1) 현재 위치에 바로 생성하려면: '.' 입력"
+print_warning "     ⇒ 결과: $CURRENT_DIR/<프로젝트이름>/"
+print_warning "  2) 하위 폴더를 하나 더 만들고 그 안에 생성하려면: './backstage' 입력"
+print_warning "     ⇒ 결과: $CURRENT_DIR/backstage/<프로젝트이름>/"
 print_warning ""
-print_warning "  옵션 2: 하위 폴더 생성"
-print_warning "    입력: ./backstage"
-print_warning "    결과: $CURRENT_DIR/backstage/my-backstage/"
-print_warning ""
-print_warning "  중요: npx가 입력한 폴더 '안에' 또 폴더를 생성합니다!"
-print_warning ""
-print_info "추천: 현재 위치(.)에 바로 생성하는 것을 권장합니다."
+print_info "※ 정리: '.' 을 입력해도 현재 위치 '안에' <프로젝트이름> 폴더가 생성됩니다."
+print_info ""
+print_warning "※ 프로젝트 이름은 하이픈(-)을 사용하는 것을 권장합니다. (예: rnd-backstage, my-backstage)"
 print_info ""
 
-ask_input "Backstage를 설치할 디렉토리 경로를 입력하세요: " "INSTALL_DIR"
+ask_input "Backstage를 설치할 프로젝트 이름(디렉토리 경로)를 입력하세요: " "INSTALL_DIR"
 
 if [ ! -d "$INSTALL_DIR" ]; then
     if ask_yes_no "디렉토리를 생성하시겠습니까?" "Y"; then
@@ -146,19 +145,55 @@ print_info "현재 위치: $(pwd)"
 print_info "npx는 이 위치에 Backstage 프로젝트 폴더를 생성합니다."
 print_warning "주의: npx가 새로운 폴더를 생성합니다!"
 
-npx @backstage/create-app@latest --yes
+print_info ""
+print_warning "⚠️  중요: @backstage/create-app은 interactive CLI입니다."
+print_warning "프로젝트 이름은 하이픈(-)을 사용하는 것을 권장합니다. (예: rnd-backstage, my-backstage)"
+ask_input "프로젝트 이름을 입력하세요 (기본: my-backstage): " "PROJECT_NAME"
+PROJECT_NAME=${PROJECT_NAME:-my-backstage}
 
-# 생성된 폴더 찾기 (가장 최근에 만든 디렉토리)
-BACKSTAGE_NAME=$(ls -td */ 2>/dev/null | head -n 1 | tr -d '/')
-if [ -n "$BACKSTAGE_NAME" ]; then
+print_info ""
+print_info "creating a new app..."
+
+# stdin으로 자동 응답 제공
+(echo "$PROJECT_NAME" | npx -y @backstage/create-app@latest) || {
+    # fallback: expect를 사용한 자동화
+    if command -v expect &> /dev/null; then
+        print_info "expect를 사용하여 자동 입력 중..."
+        expect << EOF
+spawn npx @backstage/create-app@latest
+expect "Enter a name for the app*"
+send "$PROJECT_NAME\r"
+expect eof
+EOF
+    else
+        # expect가 없으면 사용자에게 수동 입력 요청
+        print_warning "expect가 설치되어 있지 않습니다."
+        print_warning "프롬프트가 나타나면 프로젝트 이름을 입력해주세요."
+        echo "$PROJECT_NAME" | npx @backstage/create-app@latest
+    fi
+}
+
+# 생성된 폴더 찾기
+BACKSTAGE_NAME="$PROJECT_NAME"
+if [ -d "$BACKSTAGE_NAME" ]; then
     cd "$BACKSTAGE_NAME"
     BACKSTAGE_DIR=$(pwd)
     print_success "Backstage 프로젝트 생성 완료"
     print_info "생성된 폴더: $BACKSTAGE_NAME"
     print_info "최종 위치: $BACKSTAGE_DIR"
 else
-    print_error "Backstage 폴더를 찾을 수 없습니다."
-    exit 1
+    # fallback: 가장 최근에 만든 디렉토리 찾기
+    BACKSTAGE_NAME=$(ls -td */ 2>/dev/null | head -n 1 | tr -d '/')
+    if [ -n "$BACKSTAGE_NAME" ]; then
+        cd "$BACKSTAGE_NAME"
+        BACKSTAGE_DIR=$(pwd)
+        print_success "Backstage 프로젝트 생성 완료"
+        print_info "생성된 폴더: $BACKSTAGE_NAME"
+        print_info "최종 위치: $BACKSTAGE_DIR"
+    else
+        print_error "Backstage 폴더를 찾을 수 없습니다."
+        exit 1
+    fi
 fi
 
 # Step 5: PostgreSQL 선택
@@ -208,15 +243,16 @@ print_success "Secrets 생성 완료"
 # GitHub Token 입력
 ask_input "GitHub Personal Access Token을 입력하세요: " "GITHUB_TOKEN"
 
+# GitHub OAuth 정보
+print_info "GitHub OAuth 설정"
+ask_input "GitHub OAuth Client ID를 입력하세요: " "AUTH_GITHUB_CLIENT_ID"
+ask_input "GitHub OAuth Client Secret을 입력하세요: " "AUTH_GITHUB_CLIENT_SECRET"
+
 # Google OAuth 정보
 print_info "Google OAuth 설정"
 ask_input "Google OAuth Client ID를 입력하세요: " "AUTH_GOOGLE_CLIENT_ID"
 ask_input "Google OAuth Client Secret을 입력하세요: " "AUTH_GOOGLE_CLIENT_SECRET"
 
-# GitHub OAuth 정보
-print_info "GitHub OAuth 설정"
-ask_input "GitHub OAuth Client ID를 입력하세요: " "AUTH_GITHUB_CLIENT_ID"
-ask_input "GitHub OAuth Client Secret을 입력하세요: " "AUTH_GITHUB_CLIENT_SECRET"
 
 # Step 7: app-config.yaml 통합
 print_info "app-config.yaml 통합 중..."
@@ -375,8 +411,6 @@ print_info "docker-compose.yml 생성 중..."
 if [ "$USE_CONTAINER_DB" = true ]; then
     # Docker 컨테이너로 PostgreSQL 생성
     cat > docker-compose.yml << 'COMPOSEEOF'
-version: '3.8'
-
 services:
   postgres:
     image: postgres:17-bookworm
@@ -478,29 +512,87 @@ print_success "docker-compose.yml 생성 완료"
 print_info "Dockerfile 생성 중..."
 
 cat > Dockerfile << 'DOCKERFILEEOF'
-FROM node:20-bookworm-slim
+# Multi-stage build for Backstage
+# Stage 1: Build stage
+FROM node:22-bookworm AS build
 
+# Set Python interpreter for `node-gyp` to use
+ENV PYTHON=/usr/bin/python3
+
+# Install dependencies for native modules
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 g++ build-essential libsqlite3-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
 WORKDIR /app
 
-# 패키지 파일 복사
-COPY package.json yarn.lock ./
-COPY packages/backend/package.json ./packages/backend/
-COPY packages/app/package.json ./packages/app/
+# Copy Yarn files and enable corepack
+COPY .yarnrc.yml ./
+COPY .yarn ./.yarn
+COPY package.json yarn.lock backstage.json ./
+RUN corepack enable && corepack prepare yarn@4.4.1 --activate
 
-# 의존성 설치
-RUN yarn install --frozen-lockfile
+# Copy workspace package.json files for dependency resolution
+COPY packages/app/package.json ./packages/app/package.json
+COPY packages/backend/package.json ./packages/backend/package.json
 
-# 소스 코드 복사
+# Install all dependencies (including devDependencies needed for build)
+RUN yarn install --immutable
+
+# Copy all source files
 COPY . .
 
-# Backstage 빌드
+# Build all packages (includes both frontend and backend)
 RUN yarn tsc
-RUN yarn build:backend --config app-config.yaml
-RUN yarn build
+RUN yarn build:all
 
-EXPOSE 3000 7007
+# Stage 2: Runtime stage
+FROM node:22-bookworm-slim
 
-CMD ["node", "packages/backend/dist/index.js", "--config", "app-config.yaml"]
+# Set Python interpreter for `node-gyp` to use
+ENV PYTHON=/usr/bin/python3
+
+# Install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 libsqlite3-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Enable corepack as root before switching to node user
+RUN corepack enable && corepack prepare yarn@4.4.1 --activate
+
+# Use non-root user
+USER node
+WORKDIR /app
+
+# Copy yarn configuration
+COPY --chown=node:node .yarnrc.yml ./
+COPY --chown=node:node .yarn ./.yarn
+COPY --chown=node:node package.json yarn.lock backstage.json ./
+
+# Copy skeleton and install production dependencies
+COPY --chown=node:node --from=build /app/packages/backend/dist/skeleton.tar.gz ./
+RUN tar xzf skeleton.tar.gz && rm skeleton.tar.gz
+
+# Install only production dependencies
+RUN yarn workspaces focus --all --production
+
+# Copy built backend bundle
+COPY --chown=node:node --from=build /app/packages/backend/dist/bundle.tar.gz ./
+RUN tar xzf bundle.tar.gz && rm bundle.tar.gz
+
+# Copy config and examples
+COPY --chown=node:node app-config*.yaml ./
+COPY --chown=node:node examples ./examples
+
+# Set production mode
+ENV NODE_ENV=production
+ENV NODE_OPTIONS="--no-node-snapshot"
+
+EXPOSE 7007
+
+# Run the backend
+CMD ["node", "packages/backend", "--config", "app-config.yaml"]
 DOCKERFILEEOF
 
 print_success "Dockerfile 생성 완료"
@@ -522,9 +614,9 @@ echo "     yarn build:backend"
 echo ""
 echo "  2. Docker 이미지 빌드 및 실행"
 if [ "$USE_CONTAINER_DB" = true ]; then
-    echo "     docker-compose up -d --build"
+    echo "     docker compose up --build -d"
 else
-    echo "     docker-compose up -d --build"
+    echo "     docker compose up --build -d"
 fi
 echo ""
 echo "  3. 접속"
